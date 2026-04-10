@@ -6,9 +6,8 @@ import { signOut, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { 
-  AiCloud01Icon, 
-  Logout01Icon, 
+import {
+  Logout01Icon,
   Menu01Icon,
   Task01Icon,
   TeacherIcon
@@ -31,7 +30,7 @@ export default function InstructorLayout({
       {/* Sidebar */}
       <aside className="hidden lg:flex w-72 flex-col m-4 mr-0 glass rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden group">
         <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[80px] -z-10 group-hover:bg-purple-500/20 transition-colors"></div>
-        
+
         <div className="flex h-20 items-center gap-3 px-8 border-b border-white/5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20">
             <HugeiconsIcon icon={TeacherIcon} className="w-6 h-6" />
@@ -100,7 +99,7 @@ export default function InstructorLayout({
             <span className="font-bold text-sm tracking-tight text-primary uppercase">Instructor</span>
           </div>
           <Button variant="ghost" size="icon" className="rounded-xl">
-             <HugeiconsIcon icon={Menu01Icon} className="w-6 h-6" />
+            <HugeiconsIcon icon={Menu01Icon} className="w-6 h-6" />
           </Button>
         </header>
 
