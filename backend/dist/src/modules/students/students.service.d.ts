@@ -30,14 +30,14 @@ export declare class StudentsService {
         }[];
         lessons: {
             id: string;
-            orderIndex: number;
             title: string;
+            orderIndex: number;
         }[];
     } & {
         id: string;
         trackId: string;
-        orderIndex: number;
         title: string;
+        orderIndex: number;
     })[]>;
     getLesson(lessonId: string, userId: string): Promise<{
         id: string;
@@ -55,19 +55,19 @@ export declare class StudentsService {
     }>;
     createSubmission(assignmentId: string, fileKey: string, userId: string): Promise<{
         id: string;
+        createdAt: Date;
         studentId: string;
         assignmentId: string;
         fileUrl: string;
         score: number | null;
         feedback: string | null;
         status: string;
-        createdAt: Date;
     }>;
     submitKyc(idCardFileKey: string, paymentProofFileKey: string, userId: string): Promise<{
         id: string;
+        createdAt: Date;
         studentId: string;
         status: string;
-        createdAt: Date;
         idCardUrl: string;
         paymentProofUrl: string;
         reviewComment: string | null;

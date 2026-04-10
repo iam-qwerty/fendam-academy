@@ -77,7 +77,7 @@ export default function StudentLayout({
                   {session?.user?.name || "Student"}
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">
-                  {session?.user?.role || "Free Tier"}
+                  {(session?.user as any)?.role || "Free Tier"}
                 </p>
               </div>
             </div>
