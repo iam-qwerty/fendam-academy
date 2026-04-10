@@ -8,20 +8,24 @@ import { createStudentProfile } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { 
+  ArrowRight01Icon, 
+  Mail01Icon, 
+  LockKeyIcon, 
+  UserIcon,
+  AiCloud01Icon,
+  CodeIcon,
+  Shield01Icon,
+  Settings01Icon
+} from "@hugeicons/core-free-icons";
 
 const TRACKS = [
-  { id: "track-ai-ml", name: "AI / Machine Learning" },
-  { id: "track-fullstack", name: "Full-Stack Software Development" },
-  { id: "track-cybersecurity", name: "Cybersecurity" },
-  { id: "track-network-hacking", name: "Network Hacking" },
+  { id: "track-ai-ml", name: "AI / Machine Learning", icon: AiCloud01Icon },
+  { id: "track-fullstack", name: "Full-Stack Dev", icon: CodeIcon },
+  { id: "track-cybersecurity", name: "Cybersecurity", icon: Shield01Icon },
+  { id: "track-network-hacking", name: "Network Hacking", icon: Settings01Icon },
 ];
 
 export default function SignUpPage() {
@@ -57,9 +61,9 @@ export default function SignUpPage() {
         return;
       }
 
-      // Create StudentProfile linking user to their selected track
-      if (result.data?.user?.id) {
-        await createStudentProfile(result.data.user.id, selectedTrack);
+      const userId = result.data?.user?.id;
+      if (userId) {
+        await createStudentProfile(userId, selectedTrack);
       }
 
       router.push("/dashboard");
@@ -71,101 +75,115 @@ export default function SignUpPage() {
   }
 
   return (
-    <Card className="border-border/50 shadow-xl">
-      <CardHeader className="text-center space-y-2">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-          FA
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Join the Academy</h1>
+        <p className="text-muted-foreground">
+          Master the future of technology
+        </p>
+      </div>
+
+      {error && (
+        <div className="rounded-2xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
+          {error}
         </div>
-        <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-        <CardDescription>
-          Join FendAm Academy and start your learning journey
-        </CardDescription>
-      </CardHeader>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="name">Full Name</Label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="name" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Full Name</Label>
+          <div className="relative">
+            <HugeiconsIcon icon={UserIcon} className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="name"
               type="text"
               placeholder="John Doe"
+              className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              autoComplete="name"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Email Address</Label>
+          <div className="relative">
+            <HugeiconsIcon icon={Mail01Icon} className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
+              className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              autoComplete="email"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Password</Label>
+          <div className="relative">
+            <HugeiconsIcon icon={LockKeyIcon} className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="password"
               type="password"
-              placeholder="Min 8 characters"
+              placeholder="••••••••"
+              className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              autoComplete="new-password"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label>Learning Track</Label>
-            <div className="grid grid-cols-1 gap-2">
-              {TRACKS.map((track) => (
-                <button
-                  key={track.id}
-                  type="button"
-                  onClick={() => setSelectedTrack(track.id)}
-                  className={`rounded-lg border px-4 py-3 text-left text-sm transition-all ${
-                    selectedTrack === track.id
-                      ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary"
-                      : "border-border hover:border-primary/50 text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {track.name}
-                </button>
-              ))}
-            </div>
+        <div className="space-y-3">
+          <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Select Learning Track</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {TRACKS.map((track) => (
+              <button
+                key={track.id}
+                type="button"
+                onClick={() => setSelectedTrack(track.id)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-2xl border transition-all text-sm font-medium",
+                  selectedTrack === track.id
+                    ? "bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(3,169,244,0.1)]"
+                    : "bg-white/5 border-white/10 text-muted-foreground hover:border-white/20 hover:text-foreground"
+                )}
+              >
+                <span className={cn(
+                  "transition-colors",
+                  selectedTrack === track.id ? "text-primary" : "text-muted-foreground"
+                )}>
+                  <HugeiconsIcon icon={track.icon} className="w-5 h-5" />
+                </span>
+                {track.name}
+              </button>
+            ))}
           </div>
-        </CardContent>
+        </div>
 
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Creating account..." : "Create account"}
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            Already have an account?{" "}
-            <Link
-              href="/sign-in"
-              className="text-primary underline-offset-4 hover:underline font-medium"
-            >
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
+        <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-semibold shadow-lg shadow-primary/20 mt-4" disabled={loading}>
+          {loading ? "Creating account..." : "Get Started"}
+          {!loading && <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 w-5 h-5" />}
+        </Button>
       </form>
-    </Card>
+
+      <div className="pt-2 text-center">
+        <p className="text-sm text-muted-foreground">
+          Already a student?{" "}
+          <Link
+            href="/sign-in"
+            className="text-primary hover:text-primary/80 font-bold transition-colors"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
+

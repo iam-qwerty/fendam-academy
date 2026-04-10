@@ -7,14 +7,8 @@ import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowRight01Icon, Mail01Icon, LockKeyIcon } from "@hugeicons/core-free-icons";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -40,7 +34,6 @@ export default function SignInPage() {
         return;
       }
 
-      // Redirect based on role — will be determined by dashboard
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -50,67 +43,76 @@ export default function SignInPage() {
   }
 
   return (
-    <Card className="border-border/50 shadow-xl">
-      <CardHeader className="text-center space-y-2">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
-          FA
+    <div className="space-y-6">
+      <div className="text-center space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+        <p className="text-muted-foreground">
+          Continue your journey at FendAm Academy
+        </p>
+      </div>
+
+      {error && (
+        <div className="rounded-2xl bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1">
+          {error}
         </div>
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to your FendAm Academy account
-        </CardDescription>
-      </CardHeader>
+      )}
 
-      <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
-          {error && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-3 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground ml-1">Email Address</Label>
+          <div className="relative">
+            <HugeiconsIcon icon={Mail01Icon} className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
+              className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
             />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between ml-1">
+            <Label htmlFor="password" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Password</Label>
+            <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
+          </div>
+          <div className="relative">
+            <HugeiconsIcon icon={LockKeyIcon} className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
               id="password"
               type="password"
               placeholder="••••••••"
+              className="pl-12 h-14 rounded-2xl bg-white/5 border-white/10 focus:border-primary/50 transition-all"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
             />
           </div>
-        </CardContent>
+        </div>
 
-        <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Signing in..." : "Sign in"}
-          </Button>
-          <p className="text-sm text-muted-foreground text-center">
-            Don&apos;t have an account?{" "}
-            <Link
-              href="/sign-up"
-              className="text-primary underline-offset-4 hover:underline font-medium"
-            >
-              Sign up
-            </Link>
-          </p>
-        </CardFooter>
+        <Button type="submit" className="w-full h-14 rounded-2xl text-lg font-semibold shadow-lg shadow-primary/20" disabled={loading}>
+          {loading ? "Verifying..." : "Sign In"}
+          {!loading && <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 w-5 h-5" />}
+        </Button>
       </form>
-    </Card>
+
+      <div className="pt-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/sign-up"
+            className="text-primary hover:text-primary/80 font-bold transition-colors"
+          >
+            Create account
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 }
+
