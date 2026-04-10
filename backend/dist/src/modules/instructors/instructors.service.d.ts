@@ -31,13 +31,13 @@ export declare class InstructorsService {
             };
         } & {
             id: string;
-            createdAt: Date;
             studentId: string;
             assignmentId: string;
             fileUrl: string;
             score: number | null;
             feedback: string | null;
             status: string;
+            createdAt: Date;
         })[];
         total: number;
         page: number;
@@ -45,12 +45,12 @@ export declare class InstructorsService {
     }>;
     gradeSubmission(instructorId: string, submissionId: string, score: number, feedback: string | undefined, status: string): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         assignmentId: string;
         fileUrl: string;
         score: number | null;
         feedback: string | null;
         status: string;
+        createdAt: Date;
     }>;
 }

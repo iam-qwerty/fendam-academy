@@ -34,13 +34,13 @@ export declare class InstructorsController {
             };
         } & {
             id: string;
-            createdAt: Date;
             studentId: string;
             assignmentId: string;
             fileUrl: string;
             score: number | null;
             feedback: string | null;
             status: string;
+            createdAt: Date;
         })[];
         total: number;
         page: number;
@@ -48,12 +48,12 @@ export declare class InstructorsController {
     }>;
     gradeSubmission(id: string, dto: GradeSubmissionDto, req: Request): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         assignmentId: string;
         fileUrl: string;
         score: number | null;
         feedback: string | null;
         status: string;
+        createdAt: Date;
     }>;
 }

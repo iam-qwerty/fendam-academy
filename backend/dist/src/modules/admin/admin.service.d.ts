@@ -5,18 +5,18 @@ export declare class AdminService {
     getUsers(page?: number, limit?: number, role?: string): Promise<{
         data: {
             id: string;
-            email: string;
             name: string | null;
-            role: string;
-            emailVerified: boolean;
-            createdAt: Date;
             studentProfile: {
-                kycStatus: string;
-                enrollmentStatus: string;
                 track: {
                     name: string;
                 };
+                kycStatus: string;
+                enrollmentStatus: string;
             } | null;
+            email: string;
+            role: string;
+            emailVerified: boolean;
+            createdAt: Date;
         }[];
         total: number;
         page: number;
@@ -24,31 +24,31 @@ export declare class AdminService {
     }>;
     updateKyc(kycId: string, status: string, reviewComment?: string): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         status: string;
+        createdAt: Date;
         idCardUrl: string;
         paymentProofUrl: string;
         reviewComment: string | null;
     }>;
     updateEnrollment(userId: string, enrollmentStatus: string): Promise<{
         id: string;
-        userId: string;
         trackId: string;
+        userId: string;
         kycStatus: string;
         enrollmentStatus: string;
         progressPercent: number;
     }>;
     assignInstructor(instructorId: string, moduleId: string): Promise<{
         id: string;
-        instructorId: string;
         moduleId: string;
+        instructorId: string;
         assignedAt: Date;
     }>;
     unassignInstructor(assignmentId: string): Promise<{
         id: string;
-        instructorId: string;
         moduleId: string;
+        instructorId: string;
         assignedAt: Date;
     }>;
     getInstructorModules(page?: number, limit?: number): Promise<{
@@ -56,16 +56,16 @@ export declare class AdminService {
             id: string;
             instructor: {
                 id: string;
-                email: string;
                 name: string | null;
+                email: string;
             } | {
                 id: string;
             };
             module: {
-                title: string;
                 track: {
                     name: string;
                 };
+                title: string;
             };
             assignedAt: Date;
         }[];
@@ -77,13 +77,13 @@ export declare class AdminService {
         data: {
             student: {
                 id: string;
-                email: string;
                 name: string | null;
+                email: string;
             } | undefined;
             id: string;
-            createdAt: Date;
             studentId: string;
             status: string;
+            createdAt: Date;
             idCardUrl: string;
             paymentProofUrl: string;
             reviewComment: string | null;

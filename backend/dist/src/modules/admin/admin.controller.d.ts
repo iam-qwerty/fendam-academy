@@ -6,18 +6,18 @@ export declare class AdminController {
     getUsers(page?: string, limit?: string, role?: string): Promise<{
         data: {
             id: string;
-            email: string;
             name: string | null;
-            role: string;
-            emailVerified: boolean;
-            createdAt: Date;
             studentProfile: {
-                kycStatus: string;
-                enrollmentStatus: string;
                 track: {
                     name: string;
                 };
+                kycStatus: string;
+                enrollmentStatus: string;
             } | null;
+            email: string;
+            role: string;
+            emailVerified: boolean;
+            createdAt: Date;
         }[];
         total: number;
         page: number;
@@ -27,13 +27,13 @@ export declare class AdminController {
         data: {
             student: {
                 id: string;
-                email: string;
                 name: string | null;
+                email: string;
             } | undefined;
             id: string;
-            createdAt: Date;
             studentId: string;
             status: string;
+            createdAt: Date;
             idCardUrl: string;
             paymentProofUrl: string;
             reviewComment: string | null;
@@ -44,31 +44,31 @@ export declare class AdminController {
     }>;
     updateKyc(id: string, dto: UpdateKycDto): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         status: string;
+        createdAt: Date;
         idCardUrl: string;
         paymentProofUrl: string;
         reviewComment: string | null;
     }>;
     updateEnrollment(id: string, dto: UpdateEnrollmentDto): Promise<{
         id: string;
-        userId: string;
         trackId: string;
+        userId: string;
         kycStatus: string;
         enrollmentStatus: string;
         progressPercent: number;
     }>;
     assignInstructor(dto: AssignInstructorDto): Promise<{
         id: string;
-        instructorId: string;
         moduleId: string;
+        instructorId: string;
         assignedAt: Date;
     }>;
     unassignInstructor(id: string): Promise<{
         id: string;
-        instructorId: string;
         moduleId: string;
+        instructorId: string;
         assignedAt: Date;
     }>;
     getInstructorModules(page?: string, limit?: string): Promise<{
@@ -76,16 +76,16 @@ export declare class AdminController {
             id: string;
             instructor: {
                 id: string;
-                email: string;
                 name: string | null;
+                email: string;
             } | {
                 id: string;
             };
             module: {
-                title: string;
                 track: {
                     name: string;
                 };
+                title: string;
             };
             assignedAt: Date;
         }[];

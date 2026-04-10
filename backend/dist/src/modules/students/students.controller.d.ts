@@ -32,14 +32,14 @@ export declare class StudentsController {
         }[];
         lessons: {
             id: string;
-            title: string;
             orderIndex: number;
+            title: string;
         }[];
     } & {
         id: string;
         trackId: string;
-        title: string;
         orderIndex: number;
+        title: string;
     })[]>;
     getLesson(id: string, req: Request): Promise<{
         id: string;
@@ -57,19 +57,19 @@ export declare class StudentsController {
     }>;
     createSubmission(dto: CreateSubmissionDto, req: Request): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         assignmentId: string;
         fileUrl: string;
         score: number | null;
         feedback: string | null;
         status: string;
+        createdAt: Date;
     }>;
     submitKyc(dto: SubmitKycDto, req: Request): Promise<{
         id: string;
-        createdAt: Date;
         studentId: string;
         status: string;
+        createdAt: Date;
         idCardUrl: string;
         paymentProofUrl: string;
         reviewComment: string | null;
