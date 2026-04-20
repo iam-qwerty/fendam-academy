@@ -2,12 +2,17 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 
 @Injectable()
 export class InstructorsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadsService: UploadsService,
+  ) {}
 
   /** Get modules assigned to this instructor via InstructorModule join */
   async getAssignedModules(instructorId: string) {
@@ -44,21 +49,28 @@ export class InstructorsService {
     dueDate: string,
     maxScore: number,
   ) {
+    const parsedDueDate = new Date(dueDate);
+    if (Number.isNaN(parsedDueDate.getTime())) {
+      throw new BadRequestException('Due date must be a valid ISO date string');
+    }
+    if (parsedDueDate <= new Date()) {
+      throw new BadRequestException('Due date must be in the future');
+    }
+
     // Verify instructor is assigned to this module
     const assigned = await this.prisma.instructorModule.findUnique({
       where: {
         instructorId_moduleId: { instructorId, moduleId },
       },
     });
-    if (!assigned)
-      throw new ForbiddenException('Not assigned to this module');
+    if (!assigned) throw new ForbiddenException('Not assigned to this module');
 
     return this.prisma.assignment.create({
       data: {
         moduleId,
         title,
         instructions,
-        dueDate: new Date(dueDate),
+        dueDate: parsedDueDate,
         maxScore,
       },
     });
@@ -71,6 +83,11 @@ export class InstructorsService {
     page = 1,
     limit = 20,
   ) {
+    const validStatuses = ['submitted', 'graded', 'returned'];
+    if (status && !validStatuses.includes(status)) {
+      throw new BadRequestException('Invalid submission status filter');
+    }
+
     // Get instructor's assigned module IDs
     const assignedModuleIds = (
       await this.prisma.instructorModule.findMany({
@@ -88,7 +105,9 @@ export class InstructorsService {
       this.prisma.submission.findMany({
         where,
         include: {
-          assignment: { select: { title: true, maxScore: true, moduleId: true } },
+          assignment: {
+            select: { title: true, maxScore: true, moduleId: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
@@ -97,8 +116,26 @@ export class InstructorsService {
       this.prisma.submission.count({ where }),
     ]);
 
+    const data = await Promise.all(
+      submissions.map(async (submission) => ({
+        id: submission.id,
+        studentId: submission.studentId,
+        score: submission.score,
+        feedback: submission.feedback,
+        status: submission.status,
+        createdAt: submission.createdAt,
+        assignment: submission.assignment,
+        fileReadUrl: await this.uploadsService.getSignedReadUrl(
+          this.uploadsService.getStoredFileKey(
+            submission.fileKey,
+            submission.fileUrl,
+          ),
+        ),
+      })),
+    );
+
     return {
-      data: submissions,
+      data,
       total,
       page,
       totalPages: Math.ceil(total / limit),
@@ -113,11 +150,19 @@ export class InstructorsService {
     feedback: string | undefined,
     status: string,
   ) {
+    if (!['graded', 'returned'].includes(status)) {
+      throw new BadRequestException('Invalid submission status');
+    }
+
     const submission = await this.prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { assignment: { select: { moduleId: true } } },
+      include: { assignment: { select: { moduleId: true, maxScore: true } } },
     });
     if (!submission) throw new NotFoundException('Submission not found');
+
+    if (score > submission.assignment.maxScore) {
+      throw new BadRequestException('Score exceeds assignment max score');
+    }
 
     // IDOR: verify instructor is assigned to this module
     const assigned = await this.prisma.instructorModule.findUnique({
@@ -128,8 +173,7 @@ export class InstructorsService {
         },
       },
     });
-    if (!assigned)
-      throw new ForbiddenException('Not assigned to this module');
+    if (!assigned) throw new ForbiddenException('Not assigned to this module');
 
     return this.prisma.submission.update({
       where: { id: submissionId },

@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsInt, IsOptional, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsInt,
+  IsOptional,
+  Min,
+  IsDateString,
+  IsIn,
+} from 'class-validator';
 
 export class CreateAssignmentDto {
   @IsString()
@@ -13,8 +21,7 @@ export class CreateAssignmentDto {
   @IsNotEmpty()
   instructions!: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsDateString()
   dueDate!: string; // ISO date string
 
   @IsInt()
@@ -32,6 +39,6 @@ export class GradeSubmissionDto {
   feedback?: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsIn(['graded', 'returned'])
   status!: string; // "graded" | "returned"
 }

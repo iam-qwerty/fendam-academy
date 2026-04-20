@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { clearRoleCookie } from "@/lib/clear-role";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Logout01Icon,
@@ -81,7 +82,7 @@ export default function InstructorLayout({
               variant="ghost"
               size="sm"
               className="w-full justify-start h-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
-              onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/sign-in"; } } })}
+              onClick={() => signOut({ fetchOptions: { onSuccess: () => { clearRoleCookie(); window.location.href = "/sign-in"; } } })}
             >
               <HugeiconsIcon icon={Logout01Icon} className="mr-3 w-4 h-4" />
               Sign out

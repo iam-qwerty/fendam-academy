@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api/fetcher";
+import { useEffect, useRef, useState } from "react";
+import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface Module {
   id: string;
@@ -17,38 +18,82 @@ export default function StudentAssignmentsPage() {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeAssignmentId, setActiveAssignmentId] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetch<Module[]>("/student/modules")
       .then(setModules)
-      .catch(() => { })
+      .catch((err) => {
+        if (err instanceof ApiError) toast.error(err.message);
+        else toast.error("Failed to load assignments");
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleSubmit(assignmentId: string) {
-    // In a real implementation, this would open a file picker, upload to R2 via presigned URL,
-    // then submit the fileKey. For MVP, we show the flow structure.
-    setSubmitting(assignmentId);
+  function openFilePicker(assignmentId: string) {
+    setActiveAssignmentId(assignmentId);
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !activeAssignmentId) return;
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = "";
+
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "application/zip"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("File type not allowed. Use PDF, JPG, PNG, or ZIP.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large. Maximum 10MB.");
+      return;
+    }
+
+    setSubmitting(activeAssignmentId);
+    const assignmentId = activeAssignmentId;
 
     try {
-      // Step 1: Get presigned URL
-      // const { signedUrl, fileKey } = await apiFetch('/uploads/presigned', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ filename: 'submission.pdf', contentType: 'application/pdf' }),
-      // });
+      // Step 1: Get presigned URL from backend
+      const { signedUrl, fileKey } = await apiFetch<{ signedUrl: string; fileKey: string }>(
+        "/uploads/presigned",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+          }),
+        },
+      );
 
       // Step 2: Upload file directly to R2
-      // await fetch(signedUrl, { method: 'PUT', body: file });
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
 
-      // Step 3: Submit fileKey
-      // await apiFetch('/student/submissions', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ assignmentId, fileKey }),
-      // });
+      if (!uploadRes.ok) {
+        throw new Error("Upload to storage failed");
+      }
 
-      alert("File upload UI coming soon — R2 integration is stubbed for MVP");
+      // Step 3: Submit fileKey to backend
+      await apiFetch("/student/submissions", {
+        method: "POST",
+        body: JSON.stringify({ assignmentId, fileKey }),
+      });
+
+      toast.success("Assignment submitted successfully!");
+    } catch (err) {
+      if (err instanceof ApiError) toast.error(err.message);
+      else toast.error("Submission failed. Please try again.");
     } finally {
       setSubmitting(null);
+      setActiveAssignmentId(null);
     }
   }
 
@@ -69,6 +114,15 @@ export default function StudentAssignmentsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png,.zip"
+        className="hidden"
+        onChange={handleFileSelected}
+      />
+
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Assignments</h1>
         <p className="text-muted-foreground mt-1">
@@ -84,6 +138,7 @@ export default function StudentAssignmentsPage() {
         <div className="space-y-4">
           {allAssignments.map((assignment) => {
             const isPastDue = new Date(assignment.dueDate) < new Date();
+            const isSubmitting = submitting === assignment.id;
             return (
               <Card key={assignment.id}>
                 <CardContent className="flex items-center justify-between p-6">
@@ -105,12 +160,10 @@ export default function StudentAssignmentsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    disabled={submitting === assignment.id}
-                    onClick={() => handleSubmit(assignment.id)}
+                    disabled={isSubmitting || isPastDue}
+                    onClick={() => openFilePicker(assignment.id)}
                   >
-                    {submitting === assignment.id
-                      ? "Submitting..."
-                      : "Submit"}
+                    {isSubmitting ? "Uploading..." : "Upload & Submit"}
                   </Button>
                 </CardContent>
               </Card>

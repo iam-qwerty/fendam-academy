@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { clearRoleCookie } from "@/lib/clear-role";
 
 const adminLinks = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/kyc", label: "KYC Queue" },
+  { href: "/admin/instructor-modules", label: "Instructor Assignments" },
 ];
 
 export default function AdminLayout({
@@ -61,7 +63,7 @@ export default function AdminLayout({
             variant="ghost"
             size="sm"
             className="w-full justify-start text-sidebar-foreground/70"
-            onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/sign-in"; } } })}
+            onClick={() => signOut({ fetchOptions: { onSuccess: () => { clearRoleCookie(); window.location.href = "/sign-in"; } } })}
           >
             Sign out
           </Button>
@@ -71,7 +73,7 @@ export default function AdminLayout({
       <main className="flex-1 overflow-auto">
         <header className="flex md:hidden h-14 items-center justify-between border-b border-border px-4">
           <span className="font-semibold">Admin Panel</span>
-          <Button variant="ghost" size="sm" onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/sign-in"; } } })}>
+          <Button variant="ghost" size="sm" onClick={() => signOut({ fetchOptions: { onSuccess: () => { clearRoleCookie(); window.location.href = "/sign-in"; } } })}>
             Sign out
           </Button>
         </header>

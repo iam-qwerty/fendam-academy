@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/fetcher";
+import { SecureFileLink } from "@/components/secure-file-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface Submission {
   id: string;
   studentId: string;
-  fileUrl: string;
+  fileReadUrl: string;
   score: number | null;
   feedback: string | null;
   status: string;
@@ -38,7 +40,6 @@ export default function InstructorSubmissionsPage() {
   const [gradeFeedback, setGradeFeedback] = useState("");
 
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (filter) params.set("status", filter);
 
@@ -47,7 +48,9 @@ export default function InstructorSubmissionsPage() {
         setSubmissions(res.data);
         setTotalPages(res.totalPages);
       })
-      .catch(() => { })
+      .catch(() => {
+        toast.error("Failed to load submissions");
+      })
       .finally(() => setLoading(false));
   }, [page, filter]);
 
@@ -73,7 +76,7 @@ export default function InstructorSubmissionsPage() {
       setGradeScore("");
       setGradeFeedback("");
     } catch {
-      alert("Failed to grade submission");
+      toast.error("Failed to grade submission");
     }
   }
 
@@ -105,6 +108,7 @@ export default function InstructorSubmissionsPage() {
               variant={filter === status ? "default" : "outline"}
               size="sm"
               onClick={() => {
+                setLoading(true);
                 setFilter(status);
                 setPage(1);
               }}
@@ -153,14 +157,7 @@ export default function InstructorSubmissionsPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <a
-                      href={sub.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      View File
-                    </a>
+                    <SecureFileLink href={sub.fileReadUrl} label="View File" />
                     {sub.status === "submitted" && (
                       <Button
                         size="sm"
@@ -229,7 +226,10 @@ export default function InstructorSubmissionsPage() {
             variant="outline"
             size="sm"
             disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => p - 1);
+            }}
           >
             Previous
           </Button>
@@ -240,7 +240,10 @@ export default function InstructorSubmissionsPage() {
             variant="outline"
             size="sm"
             disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
+            onClick={() => {
+              setLoading(true);
+              setPage((p) => p + 1);
+            }}
           >
             Next
           </Button>

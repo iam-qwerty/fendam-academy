@@ -55,6 +55,7 @@ export class StudentsController {
   }
 
   @Post('kyc')
+  @UseGuards(EmailVerifiedGuard)
   submitKyc(@Body() dto: SubmitKycDto, @Req() req: Request) {
     return this.studentsService.submitKyc(
       dto.idCardFileKey,

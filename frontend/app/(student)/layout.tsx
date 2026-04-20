@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "@/lib/auth-client";
+import { getUserRole } from "@/lib/auth-flow";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { clearRoleCookie } from "@/lib/clear-role";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   DashboardSquare01Icon, 
@@ -28,6 +30,7 @@ export default function StudentLayout({
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const role = getUserRole(session?.user);
 
   return (
     <div className="flex min-h-screen background-grid">
@@ -77,7 +80,7 @@ export default function StudentLayout({
                   {session?.user?.name || "Student"}
                 </p>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">
-                  {(session?.user as any)?.role || "Free Tier"}
+                  {role}
                 </p>
               </div>
             </div>
@@ -85,7 +88,7 @@ export default function StudentLayout({
               variant="ghost"
               size="sm"
               className="w-full justify-start h-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
-              onClick={() => signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/sign-in"; } } })}
+              onClick={() => signOut({ fetchOptions: { onSuccess: () => { clearRoleCookie(); window.location.href = "/sign-in"; } } })}
             >
               <HugeiconsIcon icon={Logout01Icon} className="mr-3 w-4 h-4" />
               Sign out
@@ -118,4 +121,3 @@ export default function StudentLayout({
     </div>
   );
 }
-

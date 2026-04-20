@@ -1,4 +1,5 @@
 import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -43,7 +44,8 @@ async function getJwt(): Promise<string | null> {
  * - Gets a JWT from better-auth's JWT plugin (asymmetric key, JWKS-verifiable)
  * - Injects as Bearer token for NestJS
  * - Handles 401 with token refresh + retry
- * - Throws ApiError for non-OK responses per spec §12.3
+ * - Shows toast notifications for errors per spec §12.3
+ * - Throws ApiError for non-OK responses
  */
 export async function apiFetch<T = unknown>(
   url: string,
@@ -75,7 +77,33 @@ export async function apiFetch<T = unknown>(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Unknown error" }));
-    throw new ApiError(res.status, error.message || "Request failed");
+    const message = Array.isArray(error.message)
+      ? error.message.join(", ")
+      : error.message || "Request failed";
+
+    // Show toast based on status code per spec §12.3
+    switch (res.status) {
+      case 401:
+        toast.error("Session expired. Please sign in again.");
+        // Redirect after a brief delay
+        setTimeout(() => { window.location.href = "/sign-in"; }, 1500);
+        break;
+      case 403:
+        toast.error(`Access denied: ${message}`);
+        break;
+      case 400:
+      case 422:
+        toast.error(message);
+        break;
+      default:
+        if (res.status >= 500) {
+          toast.error("Something went wrong. Please try again later.");
+        } else {
+          toast.error(message);
+        }
+    }
+
+    throw new ApiError(res.status, message);
   }
 
   return res.json();

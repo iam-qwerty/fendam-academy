@@ -138,7 +138,7 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">Choose Your Path</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
               Our curriculum is built by industry veterans to ensure you learn the most
-              relevant skills for today's market.
+              relevant skills for today&apos;s market.
             </p>
           </div>
 
@@ -220,4 +220,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

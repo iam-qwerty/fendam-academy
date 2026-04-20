@@ -1,0 +1,44 @@
+﻿bun : $ next build
+At line:1 char:1
++ bun run build 2>&1 | Out-File -FilePath build-out.txt -Encoding utf8; ...
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ($ next build:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Γû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env.local, .env
+
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 15.8s
+  Running TypeScript ...
+  Finished TypeScript in 16.1s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/14) ...
+  Generating static pages using 7 workers (3/14) 
+  Generating static pages using 7 workers (6/14) 
+  Generating static pages using 7 workers (10/14) 
+Γ£ô Generating static pages using 7 workers (14/14) in 2.1s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /admin/instructor-modules
+Γö£ Γùï /admin/kyc
+Γö£ Γùï /admin/users
+Γö£ ╞Æ /api/auth/[...all]
+Γö£ ╞Æ /dashboard
+Γö£ Γùï /instructor/submissions
+Γö£ Γùï /sign-in
+Γö£ Γùï /sign-up
+Γö£ Γùï /student/assignments
+Γö£ Γùï /student/dashboard
+Γö£ ╞Æ /student/lessons/[id]
+Γöö Γùï /student/modules
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

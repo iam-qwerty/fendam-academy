@@ -57,19 +57,13 @@ export class AdminController {
   }
 
   @Patch('enrollment/:id')
-  updateEnrollment(
-    @Param('id') id: string,
-    @Body() dto: UpdateEnrollmentDto,
-  ) {
+  updateEnrollment(@Param('id') id: string, @Body() dto: UpdateEnrollmentDto) {
     return this.adminService.updateEnrollment(id, dto.enrollmentStatus);
   }
 
   @Post('instructor-modules')
   assignInstructor(@Body() dto: AssignInstructorDto) {
-    return this.adminService.assignInstructor(
-      dto.instructorId,
-      dto.moduleId,
-    );
+    return this.adminService.assignInstructor(dto.instructorId, dto.moduleId);
   }
 
   @Delete('instructor-modules/:id')

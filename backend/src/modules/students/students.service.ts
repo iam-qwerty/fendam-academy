@@ -2,12 +2,17 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 
 @Injectable()
 export class StudentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadsService: UploadsService,
+  ) {}
 
   async getDashboard(userId: string) {
     const profile = await this.prisma.studentProfile.findUnique({
@@ -57,9 +62,7 @@ export class StudentsService {
     }
 
     // Pending assignments (no submission from this student, due date not passed)
-    const allAssignments = profile.track.modules.flatMap(
-      (m) => m.assignments,
-    );
+    const allAssignments = profile.track.modules.flatMap((m) => m.assignments);
     const submittedAssignmentIds = (
       await this.prisma.submission.findMany({
         where: { studentId: userId },
@@ -69,7 +72,8 @@ export class StudentsService {
 
     const pendingAssignments = allAssignments.filter(
       (a) =>
-        !submittedAssignmentIds.includes(a.id) && new Date(a.dueDate) > new Date(),
+        !submittedAssignmentIds.includes(a.id) &&
+        new Date(a.dueDate) > new Date(),
     );
 
     return {
@@ -180,8 +184,7 @@ export class StudentsService {
     fileKey: string,
     userId: string,
   ) {
-    if (!fileKey.startsWith('uploads/'))
-      throw new BadRequestException('Invalid file reference');
+    const normalizedFileKey = this.uploadsService.validateFileKey(fileKey);
 
     // IDOR: verify assignment belongs to student's track
     const profile = await this.prisma.studentProfile.findUnique({
@@ -191,16 +194,34 @@ export class StudentsService {
 
     const assignment = await this.prisma.assignment.findFirst({
       where: { id: assignmentId, module: { trackId: profile.trackId } },
+      select: { id: true, dueDate: true },
     });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
-    const fileUrl = `https://${process.env.R2_PUBLIC_DOMAIN}/${fileKey}`;
+    if (assignment.dueDate <= new Date()) {
+      throw new BadRequestException('Assignment deadline has passed');
+    }
+
+    const existingSubmission = await this.prisma.submission.findUnique({
+      where: {
+        assignmentId_studentId: {
+          assignmentId,
+          studentId: userId,
+        },
+      },
+      select: { id: true },
+    });
+    if (existingSubmission) {
+      throw new ConflictException(
+        'Assignment already submitted by this student',
+      );
+    }
 
     return this.prisma.submission.create({
       data: {
         assignmentId,
         studentId: userId,
-        fileUrl,
+        fileKey: normalizedFileKey,
         status: 'submitted',
       },
     });
@@ -211,14 +232,10 @@ export class StudentsService {
     paymentProofFileKey: string,
     userId: string,
   ) {
-    if (
-      !idCardFileKey.startsWith('uploads/') ||
-      !paymentProofFileKey.startsWith('uploads/')
-    )
-      throw new BadRequestException('Invalid file reference');
-
-    const idCardUrl = `https://${process.env.R2_PUBLIC_DOMAIN}/${idCardFileKey}`;
-    const paymentProofUrl = `https://${process.env.R2_PUBLIC_DOMAIN}/${paymentProofFileKey}`;
+    const normalizedIdCardFileKey =
+      this.uploadsService.validateFileKey(idCardFileKey);
+    const normalizedPaymentProofFileKey =
+      this.uploadsService.validateFileKey(paymentProofFileKey);
 
     // Update student profile KYC status
     await this.prisma.studentProfile.update({
@@ -229,8 +246,8 @@ export class StudentsService {
     return this.prisma.kYCRecord.create({
       data: {
         studentId: userId,
-        idCardUrl,
-        paymentProofUrl,
+        idCardFileKey: normalizedIdCardFileKey,
+        paymentProofFileKey: normalizedPaymentProofFileKey,
         status: 'submitted',
       },
     });

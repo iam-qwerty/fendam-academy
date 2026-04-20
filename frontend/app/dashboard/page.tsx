@@ -1,4 +1,6 @@
 import { auth } from "@/lib/auth";
+import { getDashboardRedirectPath, getUserRole } from "@/lib/auth-flow";
+import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -15,14 +17,16 @@ export default async function DashboardPage() {
     redirect("/sign-in");
   }
 
-  const role = (session.user as { role?: string }).role || "student";
+  const role = getUserRole(session.user);
 
-  switch (role) {
-    case "admin":
-      redirect("/admin/users");
-    case "instructor":
-      redirect("/instructor/submissions");
-    default:
-      redirect("/student/dashboard");
+  if (role !== "student") {
+    redirect(getDashboardRedirectPath(role, true));
   }
+
+  const profile = await prisma.studentProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
+
+  redirect(getDashboardRedirectPath(role, Boolean(profile)));
 }

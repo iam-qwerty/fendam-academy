@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api/fetcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface User {
   id: string;
@@ -35,7 +36,6 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState("");
 
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (roleFilter) params.set("role", roleFilter);
 
@@ -44,7 +44,9 @@ export default function AdminUsersPage() {
         setUsers(res.data);
         setTotalPages(res.totalPages);
       })
-      .catch(() => {})
+      .catch(() => {
+        toast.error("Failed to load users");
+      })
       .finally(() => setLoading(false));
   }, [page, roleFilter]);
 
@@ -74,6 +76,7 @@ export default function AdminUsersPage() {
               variant={roleFilter === role ? "default" : "outline"}
               size="sm"
               onClick={() => {
+                setLoading(true);
                 setRoleFilter(role);
                 setPage(1);
               }}
@@ -141,13 +144,19 @@ export default function AdminUsersPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => {
+            setLoading(true);
+            setPage((p) => p - 1);
+          }}>
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => {
+            setLoading(true);
+            setPage((p) => p + 1);
+          }}>
             Next
           </Button>
         </div>

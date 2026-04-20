@@ -2,18 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/fetcher";
+import { SecureFileLink } from "@/components/secure-file-link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface KycRecord {
   id: string;
   studentId: string;
-  idCardUrl: string;
-  paymentProofUrl: string;
+  idCardReadUrl: string;
+  paymentProofReadUrl: string;
   status: string;
   reviewComment: string | null;
   createdAt: string;
@@ -37,7 +39,6 @@ export default function AdminKycPage() {
   const [reviewComment, setReviewComment] = useState("");
 
   useEffect(() => {
-    setLoading(true);
     const params = new URLSearchParams({ page: String(page) });
     if (filter) params.set("status", filter);
 
@@ -66,7 +67,7 @@ export default function AdminKycPage() {
       setReviewing(null);
       setReviewComment("");
     } catch {
-      alert("Failed to update KYC");
+      toast.error("Failed to update KYC");
     }
   }
 
@@ -99,6 +100,7 @@ export default function AdminKycPage() {
                 variant={filter === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
+                  setLoading(true);
                   setFilter(status);
                   setPage(1);
                 }}
@@ -143,22 +145,11 @@ export default function AdminKycPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <a
-                      href={record.idCardUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      ID Card
-                    </a>
-                    <a
-                      href={record.paymentProofUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      Payment
-                    </a>
+                    <SecureFileLink href={record.idCardReadUrl} label="ID Card" />
+                    <SecureFileLink
+                      href={record.paymentProofReadUrl}
+                      label="Payment"
+                    />
                     {record.status === "submitted" && (
                       <Button size="sm" onClick={() => setReviewing(record.id)}>
                         Review
@@ -211,13 +202,19 @@ export default function AdminKycPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => {
+            setLoading(true);
+            setPage((p) => p - 1);
+          }}>
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => {
+            setLoading(true);
+            setPage((p) => p + 1);
+          }}>
             Next
           </Button>
         </div>

@@ -4,10 +4,14 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { UploadsService } from '../uploads/uploads.service.js';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadsService: UploadsService,
+  ) {}
 
   /** Paginated user list */
   async getUsers(page = 1, limit = 20, role?: string) {
@@ -48,11 +52,7 @@ export class AdminService {
   }
 
   /** Approve or reject KYC */
-  async updateKyc(
-    kycId: string,
-    status: string,
-    reviewComment?: string,
-  ) {
+  async updateKyc(kycId: string, status: string, reviewComment?: string) {
     const validStatuses = ['under_review', 'approved', 'rejected'];
     if (!validStatuses.includes(status))
       throw new BadRequestException(`Invalid status: ${status}`);
@@ -100,8 +100,7 @@ export class AdminService {
     const profile = await this.prisma.studentProfile.findUnique({
       where: { userId },
     });
-    if (!profile)
-      throw new NotFoundException('Student profile not found');
+    if (!profile) throw new NotFoundException('Student profile not found');
 
     return this.prisma.studentProfile.update({
       where: { userId },
@@ -134,8 +133,7 @@ export class AdminService {
     const assignment = await this.prisma.instructorModule.findUnique({
       where: { id: assignmentId },
     });
-    if (!assignment)
-      throw new NotFoundException('Assignment not found');
+    if (!assignment) throw new NotFoundException('Assignment not found');
 
     return this.prisma.instructorModule.delete({
       where: { id: assignmentId },
@@ -162,9 +160,7 @@ export class AdminService {
     ]);
 
     // Fetch instructor names separately (User doesn't have direct relation to InstructorModule)
-    const instructorIds = [
-      ...new Set(assignments.map((a) => a.instructorId)),
-    ];
+    const instructorIds = [...new Set(assignments.map((a) => a.instructorId))];
     const instructors = await this.prisma.user.findMany({
       where: { id: { in: instructorIds } },
       select: { id: true, name: true, email: true },
@@ -209,11 +205,31 @@ export class AdminService {
     });
     const studentMap = new Map(students.map((s) => [s.id, s]));
 
-    return {
-      data: records.map((r) => ({
-        ...r,
-        student: studentMap.get(r.studentId),
+    const data = await Promise.all(
+      records.map(async (record) => ({
+        id: record.id,
+        studentId: record.studentId,
+        status: record.status,
+        reviewComment: record.reviewComment,
+        createdAt: record.createdAt,
+        student: studentMap.get(record.studentId),
+        idCardReadUrl: await this.uploadsService.getSignedReadUrl(
+          this.uploadsService.getStoredFileKey(
+            record.idCardFileKey,
+            record.idCardUrl,
+          ),
+        ),
+        paymentProofReadUrl: await this.uploadsService.getSignedReadUrl(
+          this.uploadsService.getStoredFileKey(
+            record.paymentProofFileKey,
+            record.paymentProofUrl,
+          ),
+        ),
       })),
+    );
+
+    return {
+      data,
       total,
       page,
       totalPages: Math.ceil(total / limit),

@@ -11,9 +11,7 @@ import type { AuthUser } from './auth.types.js';
 const JWKS_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Cache the JWKS set — it rarely changes
-const jwks = createRemoteJWKSet(
-  new URL(`${JWKS_URL}/api/auth/jwks`),
-);
+const jwks = createRemoteJWKSet(new URL(`${JWKS_URL}/api/auth/jwks`));
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
