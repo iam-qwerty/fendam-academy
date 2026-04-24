@@ -81,7 +81,6 @@ model StudentProfile {
   trackId          String
   kycStatus        String @default("not_started")
   enrollmentStatus String @default("applied")
-  progressPercent  Float  @default(0)
   user             User   @relation(fields: [userId], references: [id])
   track            Track  @relation(fields: [trackId], references: [id])
 }

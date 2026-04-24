@@ -11,10 +11,12 @@ import {
   Logout01Icon,
   Menu01Icon,
   Task01Icon,
-  TeacherIcon
+  TeacherIcon,
+  Book02Icon,
 } from "@hugeicons/core-free-icons";
 
 const instructorLinks = [
+  { href: "/instructor/modules", label: "Modules", icon: Book02Icon },
   { href: "/instructor/submissions", label: "Submissions", icon: Task01Icon },
 ];
 

@@ -3,12 +3,15 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 
 @Injectable()
 export class StudentsService {
+  private readonly logger = new Logger(StudentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private uploadsService: UploadsService,
@@ -232,24 +235,57 @@ export class StudentsService {
     paymentProofFileKey: string,
     userId: string,
   ) {
-    const normalizedIdCardFileKey =
-      this.uploadsService.validateFileKey(idCardFileKey);
-    const normalizedPaymentProofFileKey =
-      this.uploadsService.validateFileKey(paymentProofFileKey);
+    this.logger.debug(`Submitting KYC for user ${userId}`);
+    try {
+      const normalizedIdCardFileKey =
+        this.uploadsService.validateFileKey(idCardFileKey);
+      const normalizedPaymentProofFileKey =
+        this.uploadsService.validateFileKey(paymentProofFileKey);
 
-    // Update student profile KYC status
-    await this.prisma.studentProfile.update({
+      // Update student profile KYC status
+      await this.prisma.studentProfile.update({
+        where: { userId },
+        data: { kycStatus: 'submitted' },
+      });
+
+      return await this.prisma.kYCRecord.create({
+        data: {
+          studentId: userId,
+          idCardFileKey: normalizedIdCardFileKey,
+          paymentProofFileKey: normalizedPaymentProofFileKey,
+          status: 'submitted',
+        },
+      });
+    } catch (error) {
+      this.logger.error(`Failed to submit KYC for user ${userId}: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  async getKycStatus(userId: string) {
+    const profile = await this.prisma.studentProfile.findUnique({
       where: { userId },
-      data: { kycStatus: 'submitted' },
+      select: { kycStatus: true },
     });
 
-    return this.prisma.kYCRecord.create({
-      data: {
-        studentId: userId,
-        idCardFileKey: normalizedIdCardFileKey,
-        paymentProofFileKey: normalizedPaymentProofFileKey,
-        status: 'submitted',
+    if (!profile) {
+      return { kycStatus: 'not_started', latestRecord: null };
+    }
+
+    const latestRecord = await this.prisma.kYCRecord.findFirst({
+      where: { studentId: userId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        status: true,
+        reviewComment: true,
+        createdAt: true,
       },
     });
+
+    return {
+      kycStatus: profile.kycStatus,
+      latestRecord,
+    };
   }
 }

@@ -54,7 +54,6 @@ export class UploadsService {
       Bucket: this.bucketName,
       Key: fileKey,
       ContentType: contentType,
-      ContentLength: this.maxSizeBytes, // max allowed
     });
 
     const signedUrl = await getSignedUrl(this.s3, command, {

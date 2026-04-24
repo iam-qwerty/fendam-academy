@@ -49,7 +49,6 @@ export async function createOnboardingProfile(
       trackId: track.id,
       kycStatus: "not_started",
       enrollmentStatus: "applied",
-      progressPercent: 0,
     },
     select: {
       id: true,

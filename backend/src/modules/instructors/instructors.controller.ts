@@ -31,6 +31,16 @@ export class InstructorsController {
     return this.instructorsService.getAssignedModules(req.user!.sub);
   }
 
+  @Get('modules/:id')
+  getModuleDetail(@Param('id') id: string, @Req() req: Request) {
+    return this.instructorsService.getModuleDetail(id, req.user!.sub);
+  }
+
+  @Get('assignments')
+  getAssignments(@Req() req: Request, @Query('moduleId') moduleId?: string) {
+    return this.instructorsService.getAssignments(req.user!.sub, moduleId);
+  }
+
   @Post('assignments')
   createAssignment(@Body() dto: CreateAssignmentDto, @Req() req: Request) {
     return this.instructorsService.createAssignment(

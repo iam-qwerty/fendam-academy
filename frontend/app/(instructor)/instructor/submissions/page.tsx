@@ -14,6 +14,7 @@ import { toast } from "sonner";
 interface Submission {
   id: string;
   studentId: string;
+  student: { id: string; name: string | null; email: string } | null;
   fileReadUrl: string;
   score: number | null;
   feedback: string | null;
@@ -132,7 +133,7 @@ export default function InstructorSubmissionsPage() {
                   <div className="space-y-1">
                     <p className="font-medium">{sub.assignment.title}</p>
                     <p className="text-sm text-muted-foreground">
-                      Student: {sub.studentId.slice(0, 8)}... •{" "}
+                      Student: {sub.student?.name || sub.student?.email || sub.studentId.slice(0, 8) + "..."} •{" "}
                       {new Date(sub.createdAt).toLocaleDateString()}
                     </p>
                     <div className="flex items-center gap-2">

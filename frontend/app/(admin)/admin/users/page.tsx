@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { apiFetch } from "@/lib/api/fetcher";
-import { Badge } from "@/components/ui/badge";
+import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 
 interface User {
@@ -28,12 +34,22 @@ interface UsersResponse {
   totalPages: number;
 }
 
+const VALID_ROLES = ["student", "instructor", "admin"] as const;
+const VALID_ENROLLMENT_STATUSES = [
+  "applied",
+  "pending",
+  "approved",
+  "enrolled",
+  "completed",
+] as const;
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [roleFilter, setRoleFilter] = useState("");
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams({ page: String(page) });
@@ -49,6 +65,48 @@ export default function AdminUsersPage() {
       })
       .finally(() => setLoading(false));
   }, [page, roleFilter]);
+
+  async function handleRoleChange(userId: string, newRole: string) {
+    setUpdating(userId);
+    try {
+      await apiFetch(`/admin/users/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ role: newRole }),
+      });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
+      );
+      toast.success("Role updated");
+    } catch (err) {
+      if (err instanceof ApiError) toast.error(err.message);
+      else toast.error("Failed to update role");
+    } finally {
+      setUpdating(null);
+    }
+  }
+
+  async function handleEnrollmentChange(userId: string, newStatus: string) {
+    setUpdating(userId);
+    try {
+      await apiFetch(`/admin/enrollment/${userId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ enrollmentStatus: newStatus }),
+      });
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId && u.studentProfile
+            ? { ...u, studentProfile: { ...u.studentProfile, enrollmentStatus: newStatus } }
+            : u,
+        ),
+      );
+      toast.success("Enrollment status updated");
+    } catch (err) {
+      if (err instanceof ApiError) toast.error(err.message);
+      else toast.error("Failed to update enrollment");
+    } finally {
+      setUpdating(null);
+    }
+  }
 
   if (loading && users.length === 0) {
     return (
@@ -94,7 +152,7 @@ export default function AdminUsersPage() {
               <th className="text-left px-4 py-3 font-medium">User</th>
               <th className="text-left px-4 py-3 font-medium">Role</th>
               <th className="text-left px-4 py-3 font-medium">Track</th>
-              <th className="text-left px-4 py-3 font-medium">Status</th>
+              <th className="text-left px-4 py-3 font-medium">Enrollment</th>
               <th className="text-left px-4 py-3 font-medium">Joined</th>
             </tr>
           </thead>
@@ -108,27 +166,44 @@ export default function AdminUsersPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant="outline" className="capitalize">
-                    {user.role}
-                  </Badge>
+                  <Select
+                    value={user.role}
+                    onValueChange={(val) => handleRoleChange(user.id, val)}
+                    disabled={updating === user.id}
+                  >
+                    <SelectTrigger className="w-[130px] h-8 text-xs capitalize">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VALID_ROLES.map((role) => (
+                        <SelectItem key={role} value={role} className="capitalize">
+                          {role}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {user.studentProfile?.track.name || "—"}
                 </td>
                 <td className="px-4 py-3">
                   {user.studentProfile ? (
-                    <div className="space-y-1">
-                      <Badge
-                        variant={
-                          user.studentProfile.enrollmentStatus === "enrolled"
-                            ? "default"
-                            : "secondary"
-                        }
-                        className="capitalize text-xs"
-                      >
-                        {user.studentProfile.enrollmentStatus}
-                      </Badge>
-                    </div>
+                    <Select
+                      value={user.studentProfile.enrollmentStatus}
+                      onValueChange={(val) => handleEnrollmentChange(user.id, val)}
+                      disabled={updating === user.id}
+                    >
+                      <SelectTrigger className="w-[140px] h-8 text-xs capitalize">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VALID_ENROLLMENT_STATUSES.map((status) => (
+                          <SelectItem key={status} value={status} className="capitalize">
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
                     "—"
                   )}

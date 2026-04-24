@@ -40,6 +40,64 @@ export class InstructorsService {
     }));
   }
 
+  /** Get single module detail — verify instructor is assigned */
+  async getModuleDetail(moduleId: string, instructorId: string) {
+    const assignment = await this.prisma.instructorModule.findUnique({
+      where: {
+        instructorId_moduleId: { instructorId, moduleId },
+      },
+      include: {
+        module: {
+          include: {
+            track: { select: { id: true, name: true } },
+            _count: {
+              select: { lessons: true, assignments: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!assignment)
+      throw new ForbiddenException('Not assigned to this module');
+
+    return {
+      id: assignment.module.id,
+      title: assignment.module.title,
+      orderIndex: assignment.module.orderIndex,
+      track: assignment.module.track,
+      lessonCount: assignment.module._count.lessons,
+      assignmentCount: assignment.module._count.assignments,
+      assignedAt: assignment.assignedAt,
+    };
+  }
+
+  /** Get assignments scoped to instructor's assigned modules */
+  async getAssignments(instructorId: string, moduleId?: string) {
+    const assignedModuleIds = (
+      await this.prisma.instructorModule.findMany({
+        where: { instructorId },
+        select: { moduleId: true },
+      })
+    ).map((a) => a.moduleId);
+
+    const where: Record<string, unknown> = {
+      moduleId: moduleId ? moduleId : { in: assignedModuleIds },
+    };
+
+    // If a specific moduleId is requested, verify instructor is assigned to it
+    if (moduleId && !assignedModuleIds.includes(moduleId)) {
+      throw new ForbiddenException('Not assigned to this module');
+    }
+
+    const assignments = await this.prisma.assignment.findMany({
+      where,
+      orderBy: { dueDate: 'asc' },
+    });
+
+    return { data: assignments };
+  }
+
   /** Create assignment — only for modules assigned to this instructor */
   async createAssignment(
     instructorId: string,
@@ -117,21 +175,31 @@ export class InstructorsService {
     ]);
 
     const data = await Promise.all(
-      submissions.map(async (submission) => ({
-        id: submission.id,
-        studentId: submission.studentId,
-        score: submission.score,
-        feedback: submission.feedback,
-        status: submission.status,
-        createdAt: submission.createdAt,
-        assignment: submission.assignment,
-        fileReadUrl: await this.uploadsService.getSignedReadUrl(
-          this.uploadsService.getStoredFileKey(
-            submission.fileKey,
-            submission.fileUrl,
+      submissions.map(async (submission) => {
+        const student = await this.prisma.user.findUnique({
+          where: { id: submission.studentId },
+          select: { id: true, name: true, email: true },
+        });
+
+        return {
+          id: submission.id,
+          studentId: submission.studentId,
+          student: student
+            ? { id: student.id, name: student.name, email: student.email }
+            : null,
+          score: submission.score,
+          feedback: submission.feedback,
+          status: submission.status,
+          createdAt: submission.createdAt,
+          assignment: submission.assignment,
+          fileReadUrl: await this.uploadsService.getSignedReadUrl(
+            this.uploadsService.getStoredFileKey(
+              submission.fileKey,
+              submission.fileUrl,
+            ),
           ),
-        ),
-      })),
+        };
+      }),
     );
 
     return {

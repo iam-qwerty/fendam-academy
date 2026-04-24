@@ -1,9 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
+  
+  const app = await NestFactory.create(AppModule, {
+    // Configures the built-in logger to show all levels.
+    // In production, you might only want ['log', 'error', 'warn']
+    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
 
   // Enable CORS for frontend
   app.enableCors({
@@ -17,11 +23,15 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors) => {
+        logger.error('DTO Validation Error: ' + JSON.stringify(errors, null, 2));
+        return new BadRequestException(errors);
+      },
     }),
   );
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
-  console.log(`🚀 FendAm API running on http://localhost:${port}`);
+  logger.log(`🚀 FendAm API running on http://localhost:${port}`);
 }
 void bootstrap();

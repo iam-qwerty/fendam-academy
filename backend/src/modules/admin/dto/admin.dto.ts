@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsIn } from 'class-validator';
 
 export class UpdateKycDto {
   @IsString()
@@ -24,4 +24,11 @@ export class AssignInstructorDto {
   @IsString()
   @IsNotEmpty()
   moduleId!: string;
+}
+
+export class UpdateUserRoleDto {
+  @IsString()
+  @IsNotEmpty()
+  @IsIn(['student', 'instructor', 'admin'])
+  role!: string;
 }

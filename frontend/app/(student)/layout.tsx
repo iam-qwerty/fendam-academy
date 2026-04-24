@@ -14,13 +14,15 @@ import {
   Task01Icon, 
   Logout01Icon,
   AiCloud01Icon,
-  Menu01Icon
+  Menu01Icon,
+  IdIcon,
 } from "@hugeicons/core-free-icons";
 
 const studentLinks = [
   { href: "/student/dashboard", label: "Dashboard", icon: DashboardSquare01Icon },
   { href: "/student/modules", label: "Curriculum", icon: Book02Icon },
   { href: "/student/assignments", label: "Assignments", icon: Task01Icon },
+  { href: "/student/kyc", label: "KYC", icon: IdIcon },
 ];
 
 export default function StudentLayout({

@@ -63,4 +63,10 @@ export class StudentsController {
       req.user!.sub,
     );
   }
+
+  @Get('kyc')
+  @UseGuards(EmailVerifiedGuard)
+  getKycStatus(@Req() req: Request) {
+    return this.studentsService.getKycStatus(req.user!.sub);
+  }
 }

@@ -17,6 +17,7 @@ import {
   UpdateKycDto,
   UpdateEnrollmentDto,
   AssignInstructorDto,
+  UpdateUserRoleDto,
 } from './dto/admin.dto.js';
 
 @Controller('admin')
@@ -80,5 +81,10 @@ export class AdminController {
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 20,
     );
+  }
+
+  @Patch('users/:id')
+  updateUserRole(@Param('id') id: string, @Body() dto: UpdateUserRoleDto) {
+    return this.adminService.updateUserRole(id, dto.role);
   }
 }

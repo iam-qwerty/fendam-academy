@@ -21,7 +21,7 @@ export function getDashboardRedirectPath(
     case "admin":
       return "/admin/users";
     case "instructor":
-      return "/instructor/submissions";
+      return "/instructor/modules";
     default:
       return hasStudentProfile ? "/student/dashboard" : "/onboarding";
   }
