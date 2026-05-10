@@ -6,8 +6,9 @@
       "framework": "nextjs"
     },
     "backend": {
-      "entrypoint": "backend/src/main.ts",
-      "routePrefix": "/api"
+      "entrypoint": "backend",
+      "routePrefix": "/nest",
+      "framework": "nestjs"
     }
   }
 }
