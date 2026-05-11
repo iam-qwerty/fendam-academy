@@ -10,11 +10,13 @@
       "routePrefix": "/nest",
       "framework": "nestjs",
       "includeFiles": [
-        "backend/node_modules/@prisma/adapter-pg/**",
+        "backend/node_modules/@prisma/**",
         "backend/node_modules/pg/**",
         "backend/node_modules/pg-types/**",
         "backend/node_modules/pg-protocol/**",
         "backend/node_modules/pgpass/**",
+        "backend/node_modules/@aws-sdk/**",
+        "backend/node_modules/@smithy/**",
         "backend/src/generated/prisma/**"
       ]
     }
