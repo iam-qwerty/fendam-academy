@@ -19,6 +19,7 @@ jobs:
 
       - name: Install Dependencies & Build
         run: |
+          cd backend
           bun install
           bun run build
 
@@ -28,9 +29,10 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          # Only sync the files needed for production
-          source: "dist,package.json,prisma,bun.lockb"
+          # Point to the backend subfolder for the source
+          source: "backend/dist,backend/package.json,backend/prisma,backend/bun.lockb"
           target: "~/fendam-academy"
+          strip_components: 1 # Crucial! Removes the "backend/" prefix so files land in the right spot
           overwrite: true
 
       - name: Restart Application
