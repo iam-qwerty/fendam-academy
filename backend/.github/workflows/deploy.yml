@@ -1,0 +1,47 @@
+name: Deploy NestJS API
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies & Build
+        run: |
+          bun install
+          bun run build
+
+      - name: Deploy to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          # Only sync the files needed for production
+          source: "dist,package.json,prisma,bun.lockb"
+          target: "~/fendam-academy"
+          overwrite: true
+
+      - name: Restart Application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/fendam-academy
+            bun install --production --ignore-scripts
+            # Generate Prisma client in case schema changed
+            bunx prisma generate
+            sudo systemctl restart fendam
