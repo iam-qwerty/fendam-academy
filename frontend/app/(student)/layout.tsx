@@ -8,10 +8,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { clearRoleCookie } from "@/lib/clear-role";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { 
-  DashboardSquare01Icon, 
-  Book02Icon, 
-  Task01Icon, 
+import {
+  DashboardSquare01Icon,
+  Book02Icon,
+  Task01Icon,
   Logout01Icon,
   AiCloud01Icon,
   Menu01Icon,
@@ -39,7 +39,7 @@ export default function StudentLayout({
       {/* Sidebar */}
       <aside className="hidden lg:flex w-72 flex-col m-4 mr-0 glass rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden group">
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] -z-10 group-hover:bg-primary/20 transition-colors"></div>
-        
+
         <div className="flex h-20 items-center gap-3 px-8 border-b border-white/5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20">
             <HugeiconsIcon icon={AiCloud01Icon} className="w-6 h-6" />
@@ -104,7 +104,7 @@ export default function StudentLayout({
         {/* Mobile header */}
         <header className="lg:hidden flex h-16 items-center justify-between glass border-b border-white/5 px-6 m-4 mb-0 rounded-2xl">
           <div className="flex items-center gap-2">
-             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
               FA
             </div>
             <span className="font-bold text-sm tracking-tight">FendAm Academy</span>

@@ -4,7 +4,7 @@ import { AppModule } from './app.module.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  
+
   const app = await NestFactory.create(AppModule, {
     // Configures the built-in logger to show all levels.
     // In production, you might only want ['log', 'error', 'warn']
@@ -31,7 +31,7 @@ async function bootstrap() {
   );
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`🚀 FendAm API running on http://localhost:${port}`);
 }
 void bootstrap();
