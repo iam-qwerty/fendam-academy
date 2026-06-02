@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { Cache } from 'cache-manager';
 import { InstructorsService } from './instructors.service.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { UploadsService } from '../uploads/uploads.service.js';
@@ -39,7 +40,7 @@ describe('InstructorsService', () => {
     service = new InstructorsService(
       prisma as unknown as PrismaService,
       uploadsService as unknown as UploadsService,
-      cache as unknown as ReturnType<typeof jest.fn>,
+      cache as unknown as Cache,
     );
   });
 

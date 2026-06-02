@@ -35,11 +35,11 @@ export default function StudentLayout({
   const pathname = usePathname();
   const { data: session } = useSession();
   const role = getUserRole(session?.user);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Close mobile sidebar on route change
   useEffect(() => {
-    setSidebarOpen(true);
+    if (window.innerWidth < 1024) setSidebarOpen(false);
   }, [pathname]);
 
   const sidebarContent = (

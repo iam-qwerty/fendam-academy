@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import type { Cache } from 'cache-manager';
 import { StudentsService } from './students.service.js';
 import type { PrismaService } from '../../prisma/prisma.service.js';
 import type { UploadsService } from '../uploads/uploads.service.js';
@@ -30,6 +31,12 @@ describe('StudentsService', () => {
     validateFileKey: jest.fn((fileKey: string) => fileKey.trim()),
   };
 
+  const cache = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
+  };
+
   let service: StudentsService;
 
   beforeEach(() => {
@@ -37,6 +44,7 @@ describe('StudentsService', () => {
     service = new StudentsService(
       prisma as unknown as PrismaService,
       uploadsService as unknown as UploadsService,
+      cache as unknown as Cache,
     );
   });
 
