@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,39 +30,31 @@ interface KycStatus {
 }
 
 export default function StudentKycPage() {
-  const [kycStatus, setKycStatus] = useState<KycStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-
+  const queryClient = useQueryClient();
   const idCardRef = useRef<HTMLInputElement>(null);
   const paymentRef = useRef<HTMLInputElement>(null);
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
   const [paymentFile, setPaymentFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    apiFetch<KycStatus>("/student/kyc")
-      .then(setKycStatus)
-      .catch(() => { })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: kycStatus, isLoading } = useQuery({
+    queryKey: ["student", "kyc"],
+    queryFn: () => apiFetch<KycStatus>("/student/kyc"),
+    staleTime: 1 * 60 * 1000,
+  });
 
-  async function handleSubmit() {
-    if (!idCardFile || !paymentFile) {
-      toast.error("Both ID card and payment proof are required");
-      return;
-    }
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!idCardFile || !paymentFile) {
+        throw new Error("Both ID card and payment proof are required");
+      }
 
-    setUploading(true);
-    try {
       const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
       for (const file of [idCardFile, paymentFile]) {
         if (!allowedTypes.includes(file.type)) {
-          toast.error("Files must be JPG, PNG, or PDF");
-          return;
+          throw new Error("Files must be JPG, PNG, or PDF");
         }
         if (file.size > 10 * 1024 * 1024) {
-          toast.error("Files must be under 10MB");
-          return;
+          throw new Error("Files must be under 10MB");
         }
       }
 
@@ -100,21 +93,24 @@ export default function StudentKycPage() {
           paymentProofFileKey: paymentResult.fileKey,
         }),
       });
-
+    },
+    onSuccess: () => {
       toast.success("KYC documents submitted");
-      const refreshed = await apiFetch<KycStatus>("/student/kyc");
-      setKycStatus(refreshed);
+      queryClient.invalidateQueries({ queryKey: ["student", "kyc"] });
       setIdCardFile(null);
       setPaymentFile(null);
-    } catch (err) {
+    },
+    onError: (err) => {
       if (err instanceof ApiError) toast.error(err.message);
       else toast.error("Failed to submit KYC");
-    } finally {
-      setUploading(false);
-    }
+    },
+  });
+
+  async function handleSubmit() {
+    submitMutation.mutate();
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -144,7 +140,6 @@ export default function StudentKycPage() {
         </p>
       </div>
 
-      {/* Status card */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center gap-4">
@@ -201,7 +196,6 @@ export default function StudentKycPage() {
         </CardContent>
       </Card>
 
-      {/* Upload form */}
       {needsAction && (
         <Card>
           <CardHeader>
@@ -210,7 +204,6 @@ export default function StudentKycPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* ID Card */}
             <div className="space-y-2">
               <Label>ID Card / Passport</Label>
               <div className="flex items-center gap-4">
@@ -239,7 +232,6 @@ export default function StudentKycPage() {
               </div>
             </div>
 
-            {/* Payment Proof */}
             <div className="space-y-2">
               <Label>Payment Proof</Label>
               <div className="flex items-center gap-4">
@@ -270,10 +262,10 @@ export default function StudentKycPage() {
 
             <Button
               onClick={handleSubmit}
-              disabled={uploading || !idCardFile || !paymentFile}
+              disabled={submitMutation.isPending || !idCardFile || !paymentFile}
               className="w-full"
             >
-              {uploading ? "Submitting..." : isRejected ? "Resubmit" : "Submit KYC"}
+              {submitMutation.isPending ? "Submitting..." : isRejected ? "Resubmit" : "Submit KYC"}
             </Button>
           </CardContent>
         </Card>

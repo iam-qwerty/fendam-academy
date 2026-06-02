@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,45 +36,34 @@ interface ModuleDetail {
 export default function InstructorModuleDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const moduleId = params.moduleId as string;
 
-  const [module, setModule] = useState<ModuleDetail | null>(null);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const { data: module, isLoading: moduleLoading } = useQuery({
+    queryKey: ["instructor", "modules", moduleId],
+    queryFn: () => apiFetch<ModuleDetail>(`/instructor/modules/${moduleId}`),
+    staleTime: 10 * 60 * 1000,
+    enabled: !!moduleId,
+  });
 
-  // Form state
+  const { data: assignmentsResponse } = useQuery({
+    queryKey: ["instructor", "assignments", moduleId],
+    queryFn: () =>
+      apiFetch<{ data: Assignment[] }>(`/instructor/assignments?moduleId=${moduleId}`),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!moduleId,
+  });
+  const assignments = assignmentsResponse?.data ?? [];
+
+  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [instructions, setInstructions] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [maxScore, setMaxScore] = useState("");
-  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    apiFetch<ModuleDetail>(`/instructor/modules/${moduleId}`)
-      .then((data) => {
-        setModule(data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [moduleId]);
-
-  useEffect(() => {
-    apiFetch<{ data: Assignment[] }>(`/instructor/assignments?moduleId=${moduleId}`)
-      .then((res) => setAssignments(res.data))
-      .catch(() => {});
-  }, [moduleId]);
-
-  async function handleCreateAssignment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim() || !instructions.trim() || !dueDate || !maxScore) {
-      toast.error("All fields are required");
-      return;
-    }
-
-    setCreating(true);
-    try {
-      await apiFetch("/instructor/assignments", {
+  const createMutation = useMutation({
+    mutationFn: () =>
+      apiFetch("/instructor/assignments", {
         method: "POST",
         body: JSON.stringify({
           moduleId,
@@ -82,27 +72,32 @@ export default function InstructorModuleDetailPage() {
           dueDate: new Date(dueDate).toISOString(),
           maxScore: parseInt(maxScore, 10),
         }),
-      });
-
+      }),
+    onSuccess: () => {
       toast.success("Assignment created");
       setTitle("");
       setInstructions("");
       setDueDate("");
       setMaxScore("");
       setShowForm(false);
-
-      // Refresh assignments list
-      const res = await apiFetch<{ data: Assignment[] }>(`/instructor/assignments?moduleId=${moduleId}`);
-      setAssignments(res.data);
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ["instructor", "assignments", moduleId] });
+    },
+    onError: (err) => {
       if (err instanceof ApiError) toast.error(err.message);
       else toast.error("Failed to create assignment");
-    } finally {
-      setCreating(false);
+    },
+  });
+
+  async function handleCreateAssignment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || !instructions.trim() || !dueDate || !maxScore) {
+      toast.error("All fields are required");
+      return;
     }
+    createMutation.mutate();
   }
 
-  if (loading) {
+  if (moduleLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -121,7 +116,6 @@ export default function InstructorModuleDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <HugeiconsIcon icon={ArrowLeft01Icon} className="w-4 h-4 mr-2" />
@@ -135,7 +129,6 @@ export default function InstructorModuleDetailPage() {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="flex gap-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <HugeiconsIcon icon={Task01Icon} className="w-4 h-4" />
@@ -147,7 +140,6 @@ export default function InstructorModuleDetailPage() {
         </div>
       </div>
 
-      {/* Create assignment button / form */}
       {!showForm ? (
         <Button onClick={() => setShowForm(true)}>
           <HugeiconsIcon icon={AddCircleIcon} className="w-4 h-4 mr-2" />
@@ -206,8 +198,8 @@ export default function InstructorModuleDetailPage() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button type="submit" disabled={creating}>
-                  {creating ? "Creating..." : "Create"}
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Creating..." : "Create"}
                 </Button>
                 <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
                   Cancel
@@ -218,7 +210,6 @@ export default function InstructorModuleDetailPage() {
         </Card>
       )}
 
-      {/* Assignments list */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold">Assignments</h2>
         {assignments.length === 0 ? (

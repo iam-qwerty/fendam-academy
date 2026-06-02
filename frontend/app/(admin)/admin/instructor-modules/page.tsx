@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,37 +26,57 @@ interface AssignmentsResponse {
 }
 
 export default function AdminInstructorModulesPage() {
-  const [assignments, setAssignments] = useState<InstructorModuleAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-
-  // Assign form state
   const [showForm, setShowForm] = useState(false);
   const [instructorId, setInstructorId] = useState("");
   const [moduleId, setModuleId] = useState("");
-  const [assigning, setAssigning] = useState(false);
-
-  // Unassign state
   const [removing, setRemoving] = useState<string | null>(null);
 
-  function fetchAssignments() {
-    setLoading(true);
-    apiFetch<AssignmentsResponse>(
-      `/admin/instructor-modules?page=${page}`,
-    )
-      .then((res) => {
-        setAssignments(res.data);
-        setTotalPages(res.totalPages);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "instructor-modules", { page }],
+    queryFn: () =>
+      apiFetch<AssignmentsResponse>(`/admin/instructor-modules?page=${page}`),
+    staleTime: 5 * 60 * 1000,
+  });
+  const assignments = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-  useEffect(() => {
-    fetchAssignments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  const assignMutation = useMutation({
+    mutationFn: () =>
+      apiFetch("/admin/instructor-modules", {
+        method: "POST",
+        body: JSON.stringify({
+          instructorId: instructorId.trim(),
+          moduleId: moduleId.trim(),
+        }),
+      }),
+    onSuccess: () => {
+      toast.success("Instructor assigned to module");
+      setInstructorId("");
+      setModuleId("");
+      setShowForm(false);
+      queryClient.invalidateQueries({ queryKey: ["admin", "instructor-modules"] });
+    },
+    onError: () => {
+      // Toast already handled by apiFetch
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (assignmentId: string) =>
+      apiFetch(`/admin/instructor-modules/${assignmentId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      toast.success("Instructor unassigned from module");
+      queryClient.invalidateQueries({ queryKey: ["admin", "instructor-modules"] });
+    },
+    onError: () => {
+      // Toast already handled by apiFetch
+    },
+    onSettled: () => {
+      setRemoving(null);
+    },
+  });
 
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault();
@@ -63,44 +84,15 @@ export default function AdminInstructorModulesPage() {
       toast.error("Both Instructor ID and Module ID are required");
       return;
     }
-
-    setAssigning(true);
-    try {
-      await apiFetch("/admin/instructor-modules", {
-        method: "POST",
-        body: JSON.stringify({
-          instructorId: instructorId.trim(),
-          moduleId: moduleId.trim(),
-        }),
-      });
-      toast.success("Instructor assigned to module");
-      setInstructorId("");
-      setModuleId("");
-      setShowForm(false);
-      fetchAssignments();
-    } catch {
-      // Toast already handled by apiFetch
-    } finally {
-      setAssigning(false);
-    }
+    assignMutation.mutate();
   }
 
   async function handleRemove(assignmentId: string) {
     setRemoving(assignmentId);
-    try {
-      await apiFetch(`/admin/instructor-modules/${assignmentId}`, {
-        method: "DELETE",
-      });
-      toast.success("Instructor unassigned from module");
-      setAssignments((prev) => prev.filter((a) => a.id !== assignmentId));
-    } catch {
-      // Toast already handled by apiFetch
-    } finally {
-      setRemoving(null);
-    }
+    removeMutation.mutate(assignmentId);
   }
 
-  if (loading && assignments.length === 0) {
+  if (isLoading && assignments.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
@@ -128,7 +120,6 @@ export default function AdminInstructorModulesPage() {
         </Button>
       </div>
 
-      {/* Assign form */}
       {showForm && (
         <Card>
           <CardHeader>
@@ -157,8 +148,8 @@ export default function AdminInstructorModulesPage() {
                 />
               </div>
               <div className="flex items-end">
-                <Button type="submit" disabled={assigning}>
-                  {assigning ? "Assigning..." : "Assign"}
+                <Button type="submit" disabled={assignMutation.isPending}>
+                  {assignMutation.isPending ? "Assigning..." : "Assign"}
                 </Button>
               </div>
             </form>
@@ -166,7 +157,6 @@ export default function AdminInstructorModulesPage() {
         </Card>
       )}
 
-      {/* Assignment table */}
       {assignments.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           No instructor assignments yet
@@ -212,7 +202,7 @@ export default function AdminInstructorModulesPage() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      disabled={removing === a.id}
+                      disabled={removing === a.id || removeMutation.isPending}
                       onClick={() => handleRemove(a.id)}
                     >
                       {removing === a.id ? "Removing..." : "Remove"}

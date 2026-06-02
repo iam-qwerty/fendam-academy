@@ -1,39 +1,59 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { AiCloud01Icon } from "@hugeicons/core-free-icons";
+
+const NAV_LINKS = [
+  { label: "Curriculum", href: "#tracks" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Platform", href: "#platform" },
+];
 
 export function SiteHeader() {
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+
   return (
-    <header className="sticky top-0 z-50 w-full glass border-b border-border/40">
-      <div className="container mx-auto flex h-16 items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-[0_0_20px_rgba(3,169,244,0.3)] group-hover:scale-105 transition-transform">
-            <HugeiconsIcon icon={AiCloud01Icon} className="w-6 h-6" />
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+      <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between px-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+            FA
           </div>
-          <span className="font-bold text-xl tracking-tight hidden sm:inline-block">
-            FendAm <span className="text-primary">Academy</span>
+          <span className="font-bold text-lg tracking-tight">
+            FendAm Academy
           </span>
         </Link>
-        <nav className="flex items-center gap-4">
+
+        {isLanding && (
+          <nav className="hidden md:flex items-center gap-8">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+        )}
+
+        <nav className="flex items-center gap-3">
           <Link
             href="/sign-in"
             className={cn(
               buttonVariants({ variant: "ghost", size: "sm" }),
-              "text-muted-foreground hover:text-foreground transition-colors"
+              "text-sm"
             )}
           >
             Sign in
           </Link>
           <Link
             href="/sign-up"
-            className={cn(
-              buttonVariants({ size: "sm" }),
-              "bg-primary hover:bg-primary/90 shadow-[0_0_15px_rgba(3,169,244,0.2)] transition-shadow"
-            )}
+            className={cn(buttonVariants({ size: "sm" }), "rounded-lg")}
           >
             Get started
           </Link>

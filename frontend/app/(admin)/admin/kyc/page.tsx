@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetcher";
 import { SecureFileLink } from "@/components/secure-file-link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,48 +31,45 @@ interface KycResponse {
 }
 
 export default function AdminKycPage() {
-  const [records, setRecords] = useState<KycRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState("");
   const [reviewing, setReviewing] = useState<string | null>(null);
   const [reviewComment, setReviewComment] = useState("");
 
-  useEffect(() => {
-    const params = new URLSearchParams({ page: String(page) });
-    if (filter) params.set("status", filter);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "kyc", { page, filter }],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page) });
+      if (filter) params.set("status", filter);
+      return apiFetch<KycResponse>(`/admin/kyc?${params}`);
+    },
+    staleTime: 30 * 1000,
+  });
+  const records = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-    apiFetch<KycResponse>(`/admin/kyc?${params}`)
-      .then((res) => {
-        setRecords(res.data);
-        setTotalPages(res.totalPages);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [page, filter]);
-
-  async function handleAction(kycId: string, status: "approved" | "rejected") {
-    try {
-      await apiFetch(`/admin/kyc/${kycId}`, {
+  const reviewMutation = useMutation({
+    mutationFn: ({ kycId, status, comment }: { kycId: string; status: "approved" | "rejected"; comment?: string }) =>
+      apiFetch(`/admin/kyc/${kycId}`, {
         method: "PATCH",
-        body: JSON.stringify({
-          status,
-          reviewComment: reviewComment || undefined,
-        }),
-      });
-
-      setRecords((prev) =>
-        prev.map((r) => (r.id === kycId ? { ...r, status, reviewComment } : r)),
-      );
+        body: JSON.stringify({ status, reviewComment: comment || undefined }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "kyc"] });
       setReviewing(null);
       setReviewComment("");
-    } catch {
+    },
+    onError: () => {
       toast.error("Failed to update KYC");
-    }
+    },
+  });
+
+  async function handleAction(kycId: string, status: "approved" | "rejected") {
+    reviewMutation.mutate({ kycId, status, comment: reviewComment || undefined });
   }
 
-  if (loading && records.length === 0) {
+  if (isLoading && records.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -100,7 +98,6 @@ export default function AdminKycPage() {
                 variant={filter === status ? "default" : "outline"}
                 size="sm"
                 onClick={() => {
-                  setLoading(true);
                   setFilter(status);
                   setPage(1);
                 }}
@@ -158,7 +155,6 @@ export default function AdminKycPage() {
                   </div>
                 </div>
 
-                {/* Review form */}
                 {reviewing === record.id && (
                   <div className="mt-4 rounded-lg border border-border p-4 space-y-3">
                     <div className="space-y-1.5">
@@ -174,15 +170,17 @@ export default function AdminKycPage() {
                       <Button
                         size="sm"
                         onClick={() => handleAction(record.id, "approved")}
+                        disabled={reviewMutation.isPending}
                       >
-                        Approve
+                        {reviewMutation.isPending ? "Processing..." : "Approve"}
                       </Button>
                       <Button
                         size="sm"
                         variant="destructive"
                         onClick={() => handleAction(record.id, "rejected")}
+                        disabled={reviewMutation.isPending}
                       >
-                        Reject
+                        {reviewMutation.isPending ? "Processing..." : "Reject"}
                       </Button>
                       <Button
                         size="sm"
@@ -202,19 +200,13 @@ export default function AdminKycPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => {
-            setLoading(true);
-            setPage((p) => p - 1);
-          }}>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => {
-            setLoading(true);
-            setPage((p) => p + 1);
-          }}>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
             Next
           </Button>
         </div>

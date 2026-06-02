@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,71 +45,55 @@ const VALID_ENROLLMENT_STATUSES = [
 ] as const;
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [roleFilter, setRoleFilter] = useState("");
-  const [updating, setUpdating] = useState<string | null>(null);
 
-  useEffect(() => {
-    const params = new URLSearchParams({ page: String(page) });
-    if (roleFilter) params.set("role", roleFilter);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "users", { page, roleFilter }],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page) });
+      if (roleFilter) params.set("role", roleFilter);
+      return apiFetch<UsersResponse>(`/admin/users?${params}`);
+    },
+    staleTime: 1 * 60 * 1000,
+  });
+  const users = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-    apiFetch<UsersResponse>(`/admin/users?${params}`)
-      .then((res) => {
-        setUsers(res.data);
-        setTotalPages(res.totalPages);
-      })
-      .catch(() => {
-        toast.error("Failed to load users");
-      })
-      .finally(() => setLoading(false));
-  }, [page, roleFilter]);
-
-  async function handleRoleChange(userId: string, newRole: string) {
-    setUpdating(userId);
-    try {
-      await apiFetch(`/admin/users/${userId}`, {
+  const roleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      apiFetch(`/admin/users/${userId}`, {
         method: "PATCH",
-        body: JSON.stringify({ role: newRole }),
-      });
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u)),
-      );
+        body: JSON.stringify({ role }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast.success("Role updated");
-    } catch (err) {
+    },
+    onError: (err) => {
       if (err instanceof ApiError) toast.error(err.message);
       else toast.error("Failed to update role");
-    } finally {
-      setUpdating(null);
-    }
-  }
+    },
+  });
 
-  async function handleEnrollmentChange(userId: string, newStatus: string) {
-    setUpdating(userId);
-    try {
-      await apiFetch(`/admin/enrollment/${userId}`, {
+  const enrollmentMutation = useMutation({
+    mutationFn: ({ userId, enrollmentStatus }: { userId: string; enrollmentStatus: string }) =>
+      apiFetch(`/admin/enrollment/${userId}`, {
         method: "PATCH",
-        body: JSON.stringify({ enrollmentStatus: newStatus }),
-      });
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === userId && u.studentProfile
-            ? { ...u, studentProfile: { ...u.studentProfile, enrollmentStatus: newStatus } }
-            : u,
-        ),
-      );
+        body: JSON.stringify({ enrollmentStatus }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
       toast.success("Enrollment status updated");
-    } catch (err) {
+    },
+    onError: (err) => {
       if (err instanceof ApiError) toast.error(err.message);
       else toast.error("Failed to update enrollment");
-    } finally {
-      setUpdating(null);
-    }
-  }
+    },
+  });
 
-  if (loading && users.length === 0) {
+  if (isLoading && users.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -134,7 +119,6 @@ export default function AdminUsersPage() {
               variant={roleFilter === role ? "default" : "outline"}
               size="sm"
               onClick={() => {
-                setLoading(true);
                 setRoleFilter(role);
                 setPage(1);
               }}
@@ -168,8 +152,8 @@ export default function AdminUsersPage() {
                 <td className="px-4 py-3">
                   <Select
                     value={user.role}
-                    onValueChange={(val) => handleRoleChange(user.id, val)}
-                    disabled={updating === user.id}
+                    onValueChange={(val) => roleMutation.mutate({ userId: user.id, role: val })}
+                    disabled={roleMutation.isPending}
                   >
                     <SelectTrigger className="w-[130px] h-8 text-xs capitalize">
                       <SelectValue />
@@ -190,8 +174,10 @@ export default function AdminUsersPage() {
                   {user.studentProfile ? (
                     <Select
                       value={user.studentProfile.enrollmentStatus}
-                      onValueChange={(val) => handleEnrollmentChange(user.id, val)}
-                      disabled={updating === user.id}
+                      onValueChange={(val) =>
+                        enrollmentMutation.mutate({ userId: user.id, enrollmentStatus: val })
+                      }
+                      disabled={enrollmentMutation.isPending}
                     >
                       <SelectTrigger className="w-[140px] h-8 text-xs capitalize">
                         <SelectValue />
@@ -219,19 +205,13 @@ export default function AdminUsersPage() {
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => {
-            setLoading(true);
-            setPage((p) => p - 1);
-          }}>
+          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Previous
           </Button>
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages}
           </span>
-          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => {
-            setLoading(true);
-            setPage((p) => p + 1);
-          }}>
+          <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => setPage((p) => p + 1)}>
             Next
           </Button>
         </div>

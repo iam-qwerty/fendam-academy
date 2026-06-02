@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetcher";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,17 +16,13 @@ interface Module {
 }
 
 export default function StudentModulesPage() {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: modules = [], isLoading } = useQuery({
+    queryKey: ["student", "modules"],
+    queryFn: () => apiFetch<Module[]>("/student/modules"),
+    staleTime: 10 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    apiFetch<Module[]>("/student/modules")
-      .then(setModules)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />

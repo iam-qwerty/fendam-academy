@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,21 +16,54 @@ interface Module {
 }
 
 export default function StudentAssignmentsPage() {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState<string | null>(null);
   const [activeAssignmentId, setActiveAssignmentId] = useState<string | null>(null);
 
-  useEffect(() => {
-    apiFetch<Module[]>("/student/modules")
-      .then(setModules)
-      .catch((err) => {
-        if (err instanceof ApiError) toast.error(err.message);
-        else toast.error("Failed to load assignments");
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: modules = [], isLoading } = useQuery({
+    queryKey: ["student", "modules"],
+    queryFn: () => apiFetch<Module[]>("/student/modules"),
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async ({ assignmentId, file }: { assignmentId: string; file: File }) => {
+      const { signedUrl, fileKey } = await apiFetch<{ signedUrl: string; fileKey: string }>(
+        "/uploads/presigned",
+        {
+          method: "POST",
+          body: JSON.stringify({ filename: file.name, contentType: file.type }),
+        },
+      );
+
+      const uploadRes = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+
+      if (!uploadRes.ok) throw new Error("Upload to storage failed");
+
+      await apiFetch("/student/submissions", {
+        method: "POST",
+        body: JSON.stringify({ assignmentId, fileKey }),
+      });
+    },
+    onSuccess: () => {
+      toast.success("Assignment submitted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["student", "modules"] });
+      queryClient.invalidateQueries({ queryKey: ["student", "dashboard"] });
+    },
+    onError: (err) => {
+      if (err instanceof ApiError) toast.error(err.message);
+      else toast.error("Submission failed. Please try again.");
+    },
+    onSettled: () => {
+      setSubmitting(null);
+      setActiveAssignmentId(null);
+    },
+  });
 
   function openFilePicker(assignmentId: string) {
     setActiveAssignmentId(assignmentId);
@@ -40,7 +74,6 @@ export default function StudentAssignmentsPage() {
     const file = e.target.files?.[0];
     if (!file || !activeAssignmentId) return;
 
-    // Reset the input so the same file can be re-selected
     e.target.value = "";
 
     const allowedTypes = ["application/pdf", "image/jpeg", "image/png", "application/zip"];
@@ -55,49 +88,10 @@ export default function StudentAssignmentsPage() {
     }
 
     setSubmitting(activeAssignmentId);
-    const assignmentId = activeAssignmentId;
-
-    try {
-      // Step 1: Get presigned URL from backend
-      const { signedUrl, fileKey } = await apiFetch<{ signedUrl: string; fileKey: string }>(
-        "/uploads/presigned",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            filename: file.name,
-            contentType: file.type,
-          }),
-        },
-      );
-
-      // Step 2: Upload file directly to R2
-      const uploadRes = await fetch(signedUrl, {
-        method: "PUT",
-        body: file,
-        headers: { "Content-Type": file.type },
-      });
-
-      if (!uploadRes.ok) {
-        throw new Error("Upload to storage failed");
-      }
-
-      // Step 3: Submit fileKey to backend
-      await apiFetch("/student/submissions", {
-        method: "POST",
-        body: JSON.stringify({ assignmentId, fileKey }),
-      });
-
-      toast.success("Assignment submitted successfully!");
-    } catch (err) {
-      if (err instanceof ApiError) toast.error(err.message);
-      else toast.error("Submission failed. Please try again.");
-    } finally {
-      setSubmitting(null);
-      setActiveAssignmentId(null);
-    }
+    submitMutation.mutate({ assignmentId: activeAssignmentId, file });
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -114,7 +108,6 @@ export default function StudentAssignmentsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"

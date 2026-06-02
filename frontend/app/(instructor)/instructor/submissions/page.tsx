@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetcher";
 import { SecureFileLink } from "@/components/secure-file-link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,57 +32,51 @@ interface SubmissionsResponse {
 }
 
 export default function InstructorSubmissionsPage() {
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [filter, setFilter] = useState("");
   const [grading, setGrading] = useState<string | null>(null);
   const [gradeScore, setGradeScore] = useState("");
   const [gradeFeedback, setGradeFeedback] = useState("");
 
-  useEffect(() => {
-    const params = new URLSearchParams({ page: String(page) });
-    if (filter) params.set("status", filter);
+  const { data, isLoading } = useQuery({
+    queryKey: ["instructor", "submissions", { page, filter }],
+    queryFn: () => {
+      const params = new URLSearchParams({ page: String(page) });
+      if (filter) params.set("status", filter);
+      return apiFetch<SubmissionsResponse>(`/instructor/submissions?${params}`);
+    },
+    staleTime: 1 * 60 * 1000,
+  });
+  const submissions = data?.data ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-    apiFetch<SubmissionsResponse>(`/instructor/submissions?${params}`)
-      .then((res) => {
-        setSubmissions(res.data);
-        setTotalPages(res.totalPages);
-      })
-      .catch(() => {
-        toast.error("Failed to load submissions");
-      })
-      .finally(() => setLoading(false));
-  }, [page, filter]);
-
-  async function handleGrade(submissionId: string) {
-    try {
-      await apiFetch(`/instructor/submissions/${submissionId}`, {
+  const gradeMutation = useMutation({
+    mutationFn: ({ submissionId, score, feedback }: { submissionId: string; score: number; feedback: string | undefined }) =>
+      apiFetch(`/instructor/submissions/${submissionId}`, {
         method: "PATCH",
-        body: JSON.stringify({
-          score: parseInt(gradeScore, 10),
-          feedback: gradeFeedback || undefined,
-          status: "graded",
-        }),
-      });
-
-      setSubmissions((prev) =>
-        prev.map((s) =>
-          s.id === submissionId
-            ? { ...s, score: parseInt(gradeScore, 10), feedback: gradeFeedback, status: "graded" }
-            : s,
-        ),
-      );
+        body: JSON.stringify({ score, feedback, status: "graded" }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["instructor", "submissions"] });
       setGrading(null);
       setGradeScore("");
       setGradeFeedback("");
-    } catch {
+    },
+    onError: () => {
       toast.error("Failed to grade submission");
-    }
+    },
+  });
+
+  async function handleGrade(submissionId: string) {
+    gradeMutation.mutate({
+      submissionId,
+      score: parseInt(gradeScore, 10),
+      feedback: gradeFeedback || undefined,
+    });
   }
 
-  if (loading && submissions.length === 0) {
+  if (isLoading && submissions.length === 0) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -109,7 +104,6 @@ export default function InstructorSubmissionsPage() {
               variant={filter === status ? "default" : "outline"}
               size="sm"
               onClick={() => {
-                setLoading(true);
                 setFilter(status);
                 setPage(1);
               }}
@@ -170,7 +164,6 @@ export default function InstructorSubmissionsPage() {
                   </div>
                 </div>
 
-                {/* Inline grading form */}
                 {grading === sub.id && (
                   <div className="mt-4 rounded-lg border border-border p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -200,9 +193,9 @@ export default function InstructorSubmissionsPage() {
                       <Button
                         size="sm"
                         onClick={() => handleGrade(sub.id)}
-                        disabled={!gradeScore}
+                        disabled={!gradeScore || gradeMutation.isPending}
                       >
-                        Submit Grade
+                        {gradeMutation.isPending ? "Submitting..." : "Submit Grade"}
                       </Button>
                       <Button
                         size="sm"
@@ -220,17 +213,13 @@ export default function InstructorSubmissionsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <Button
             variant="outline"
             size="sm"
             disabled={page === 1}
-            onClick={() => {
-              setLoading(true);
-              setPage((p) => p - 1);
-            }}
+            onClick={() => setPage((p) => p - 1)}
           >
             Previous
           </Button>
@@ -241,10 +230,7 @@ export default function InstructorSubmissionsPage() {
             variant="outline"
             size="sm"
             disabled={page === totalPages}
-            onClick={() => {
-              setLoading(true);
-              setPage((p) => p + 1);
-            }}
+            onClick={() => setPage((p) => p + 1)}
           >
             Next
           </Button>

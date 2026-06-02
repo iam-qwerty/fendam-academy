@@ -29,21 +29,24 @@ export default function InstructorLayout({
   const { data: session } = useSession();
 
   return (
-    <div className="flex min-h-screen background-grid">
+    <div className="flex min-h-screen">
       {/* Sidebar */}
-      <aside className="hidden lg:flex w-72 flex-col m-4 mr-0 glass rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden group">
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-500/10 blur-[80px] -z-10 group-hover:bg-purple-500/20 transition-colors"></div>
-
-        <div className="flex h-20 items-center gap-3 px-8 border-b border-white/5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20">
-            <HugeiconsIcon icon={TeacherIcon} className="w-6 h-6" />
+      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card/50">
+        <div className="flex h-16 items-center gap-2.5 px-6 border-b border-border">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+            FA
           </div>
-          <span className="font-bold text-lg tracking-tight">
-            FendAm <span className="text-primary text-sm uppercase font-black">Instructor</span>
-          </span>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm tracking-tight leading-none">
+              FendAm
+            </span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground leading-none mt-0.5">
+              Instructor
+            </span>
+          </div>
         </div>
 
-        <nav className="flex-1 space-y-2 p-6">
+        <nav className="flex-1 space-y-1 p-4">
           {instructorLinks.map((link) => {
             const Icon = link.icon;
             const isActive = pathname === link.href;
@@ -52,67 +55,84 @@ export default function InstructorLayout({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "flex items-center gap-4 rounded-2xl px-4 py-3.5 text-sm font-semibold transition-all group/link",
+                  "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground",
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
                 )}
               >
-                <HugeiconsIcon icon={Icon} className={cn("w-5 h-5 transition-transform group-hover/link:scale-110", isActive ? "text-primary-foreground" : "text-primary")} />
+                <HugeiconsIcon
+                  icon={Icon}
+                  className={cn(
+                    "w-[18px] h-[18px]",
+                    isActive ? "text-primary-foreground" : "text-muted-foreground"
+                  )}
+                />
                 {link.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="p-6 mt-auto">
-          <div className="glass-card bg-white/5 rounded-3xl p-5 mb-4 border border-white/5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center font-bold text-primary">
-                {session?.user?.name?.[0] || "I"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate">
-                  {session?.user?.name || "Instructor"}
-                </p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider truncate">
-                  Global Mentor
-                </p>
-              </div>
+        <div className="p-4 mt-auto border-t border-border">
+          <div className="flex items-center gap-3 px-3 py-2 mb-2">
+            <div className="h-8 w-8 rounded-lg bg-secondary flex items-center justify-center text-xs font-bold text-primary">
+              {session?.user?.name?.[0] || "I"}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start h-10 rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
-              onClick={() => signOut({ fetchOptions: { onSuccess: () => { clearRoleCookie(); window.location.href = "/sign-in"; } } })}
-            >
-              <HugeiconsIcon icon={Logout01Icon} className="mr-3 w-4 h-4" />
-              Sign out
-            </Button>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">
+                {session?.user?.name || "Instructor"}
+              </p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wider truncate">
+                Instructor
+              </p>
+            </div>
           </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            onClick={() =>
+              signOut({
+                fetchOptions: {
+                  onSuccess: () => {
+                    clearRoleCookie();
+                    window.location.href = "/sign-in";
+                  },
+                },
+              })
+            }
+          >
+            <HugeiconsIcon icon={Logout01Icon} className="mr-3 w-4 h-4" />
+            Sign out
+          </Button>
         </div>
       </aside>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
-        <header className="lg:hidden flex h-16 items-center justify-between glass border-b border-white/5 px-6 m-4 mb-0 rounded-2xl">
+        <header className="lg:hidden flex h-14 items-center justify-between border-b border-border px-4">
           <div className="flex items-center gap-2">
-            <HugeiconsIcon icon={TeacherIcon} className="w-5 h-5 text-primary" />
-            <span className="font-bold text-sm tracking-tight text-primary uppercase">Instructor</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+              FA
+            </div>
+            <span className="font-bold text-sm tracking-tight">
+              FendAm
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground ml-1.5">
+                Instructor
+              </span>
+            </span>
           </div>
-          <Button variant="ghost" size="icon" className="rounded-xl">
-            <HugeiconsIcon icon={Menu01Icon} className="w-6 h-6" />
+          <Button variant="ghost" size="icon" className="rounded-lg">
+            <HugeiconsIcon icon={Menu01Icon} className="w-5 h-5" />
           </Button>
         </header>
 
-        <div className="flex-1 p-6 lg:p-10 reveal">
-          <div className="max-w-7xl mx-auto h-full">
-            {children}
-          </div>
+        <div className="flex-1 p-6 lg:p-10 animate-fade-up">
+          <div className="max-w-6xl mx-auto">{children}</div>
         </div>
       </main>
     </div>
   );
 }
-

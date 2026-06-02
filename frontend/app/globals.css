@@ -43,7 +43,7 @@
   /* Radius */
   --radius: 0.75rem;
 
-  /* Custom HSL for gradients */
+  /* Custom HSL for accents */
   --color-1: 199 89% 48%;
   --color-2: 262 83% 58%;
   --color-3: 316 70% 50%;
@@ -85,6 +85,10 @@
   body {
     @apply bg-background text-foreground selection:bg-primary/30;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 }
 
@@ -93,39 +97,210 @@
     @apply bg-background/60 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_0_rgba(0,0,0,0.36)];
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-purple-500;
-  }
-
   .background-grid {
     background-image: 
-      linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
+      linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
   }
 
-  .glow-mesh {
-    background: radial-gradient(circle at 50% -100%, hsl(var(--primary) / 0.15) 0%, transparent 60%),
-                radial-gradient(circle at 0% 0%, hsl(var(--color-2) / 0.05) 0%, transparent 40%),
-                radial-gradient(circle at 100% 100%, hsl(var(--color-3) / 0.05) 0%, transparent 40%);
+  .card-clean {
+    @apply rounded-2xl border border-border bg-card p-8 transition-colors;
+  }
+
+  .card-clean:hover {
+    border-color: hsl(var(--primary) / 0.3);
   }
 }
 
-/* Premium Animations */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+/* Entrance animation — sections fade up on load */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.animate-float {
-  animation: float 6s ease-in-out infinite;
+.animate-fade-up {
+  animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Staggered delays for children */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Subtle card hover lift */
+@layer utilities {
+  .hover-lift {
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.25s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* ── Decorative Elements ─────────────────────── */
+
+/* Soft spotlight glow behind sections */
+.spotlight {
+  position: relative;
+}
+.spotlight::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  translate: -50% 0;
+  width: 600px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    hsl(var(--primary) / 0.07) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Slow floating geometric shapes */
+@keyframes float-shape {
+  0%, 100% { translate: 0 0; }
+  25%  { translate: 6px -8px; }
+  50%  { translate: -4px -14px; }
+  75%  { translate: -8px -4px; }
+}
+.float-shape {
+  position: absolute;
+  border: 1px solid hsl(var(--border));
+  border-radius: 4px;
+  opacity: 0.5;
+  pointer-events: none;
+  animation: float-shape 12s ease-in-out infinite;
+}
+
+/* Corner accents on cards */
+@layer utilities {
+  .corner-accents {
+    position: relative;
+  }
+  .corner-accents::before,
+  .corner-accents::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: hsl(var(--border));
+    pointer-events: none;
+    transition: border-color 0.3s ease;
+  }
+  .corner-accents::before {
+    top: -1px;
+    left: -1px;
+    border-top: 1.5px solid;
+    border-left: 1.5px solid;
+    border-radius: 4px 0 0 0;
+  }
+  .corner-accents::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 1.5px solid;
+    border-right: 1.5px solid;
+    border-radius: 0 0 4px 0;
+  }
+  .corner-accents:hover::before,
+  .corner-accents:hover::after {
+    border-color: hsl(var(--primary) / 0.4);
+  }
+}
+
+/* Decorative large quotation mark */
+.quote-mark {
+  position: relative;
+}
+.quote-mark::before {
+  content: '\201C';
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  translate: -50% 0;
+  font-size: 8rem;
+  line-height: 1;
+  font-family: Georgia, serif;
+  color: hsl(var(--primary) / 0.08);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Step connector line */
+@layer utilities {
+  .step-connector {
+    position: relative;
+  }
+  .step-connector::after {
+    content: '';
+    position: absolute;
+    top: 36px;
+    left: calc(100% + 16px);
+    width: calc(100% - 48px);
+    height: 0;
+    border-top: 1px dashed hsl(var(--border));
+    pointer-events: none;
+  }
+  .step-connector:last-child::after {
+    display: none;
+  }
+}
+
+/* CTA decorative bracket corners */
+@layer utilities {
+  .bracket-frame {
+    position: relative;
+  }
+  .bracket-frame::before,
+  .bracket-frame::after {
+    content: '';
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    pointer-events: none;
+  }
+  .bracket-frame::before {
+    top: 24px;
+    left: 24px;
+    border-top: 1.5px solid hsl(var(--border));
+    border-left: 1.5px solid hsl(var(--border));
+  }
+  .bracket-frame::after {
+    bottom: 24px;
+    right: 24px;
+    border-bottom: 1.5px solid hsl(var(--border));
+    border-right: 1.5px solid hsl(var(--border));
+  }
+}
+
+/* Dot accent cluster */
+@layer utilities {
+  .dot-cluster {
+    background-image: radial-gradient(circle, hsl(var(--border)) 1px, transparent 1px);
+    background-size: 12px 12px;
+  }
+}
+
+/* Subtle entrance animation */
 @keyframes reveal {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .reveal {
-  animation: reveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  animation: reveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }

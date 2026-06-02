@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api/fetcher";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import {
   CourseIcon,
   Task01Icon,
   ArrowRight01Icon,
-  Calendar01Icon
+  Calendar01Icon,
 } from "@hugeicons/core-free-icons";
 
 interface DashboardData {
@@ -28,36 +28,25 @@ interface DashboardData {
 }
 
 export default function StudentDashboard() {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["student", "dashboard"],
+    queryFn: () => apiFetch<DashboardData>("/student/dashboard"),
+    staleTime: 2 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    apiFetch<DashboardData>("/student/dashboard")
-      .then(setData)
-      .catch((err) => {
-        if (err instanceof ApiError) {
-          setError(err.message);
-        } else {
-          setError("Failed to load dashboard");
-        }
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="space-y-8 animate-pulse">
+      <div className="space-y-8">
         <div className="space-y-3">
           <Skeleton className="h-10 w-64 rounded-xl" />
           <Skeleton className="h-5 w-96 rounded-lg" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-48 rounded-[2rem]" />
+            <Skeleton key={i} className="h-48 rounded-2xl" />
           ))}
         </div>
-        <Skeleton className="h-64 rounded-[2rem]" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
@@ -65,13 +54,24 @@ export default function StudentDashboard() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="glass p-10 rounded-[2.5rem] border-destructive/20 text-center max-w-md">
+        <div className="border border-destructive/20 bg-card rounded-2xl p-10 text-center max-w-md">
           <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6 text-destructive">
-            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-8 h-8 rotate-45" />
+            <HugeiconsIcon
+              icon={CheckmarkCircle01Icon}
+              className="w-8 h-8 rotate-45"
+            />
           </div>
           <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-          <p className="text-muted-foreground mb-6">{error}</p>
-          <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">
+          <p className="text-muted-foreground mb-6">
+            {error instanceof ApiError
+              ? error.message
+              : "Failed to load dashboard"}
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="rounded-xl"
+          >
             Try again
           </Button>
         </div>
@@ -83,82 +83,143 @@ export default function StudentDashboard() {
 
   return (
     <div className="space-y-10">
+      {/* Decorative dot cluster */}
+      <div className="absolute top-0 right-0 w-40 h-40 dot-cluster opacity-20 pointer-events-none hidden lg:block -z-10" />
+
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 animate-fade-up relative">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2">Dashboard</h1>
-          <p className="text-muted-foreground text-lg">
-            Welcome back! You&apos;re mastering{" "}
-            <span className="text-primary font-bold">{data.track.name}</span>
+          <div className="inline-flex items-center gap-2 mb-3">
+            <span className="w-5 h-px bg-primary" />
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+              Student
+            </p>
+          </div>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight mb-2">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Welcome back — you&apos;re in{" "}
+            <span className="text-foreground font-semibold">
+              {data.track.name}
+            </span>
           </p>
         </div>
-        <div className="hidden lg:flex items-center gap-3 glass px-4 py-2 rounded-2xl border-white/5">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-          <span className="text-sm font-semibold uppercase tracking-wider opacity-70">Academy Connected</span>
+        <div className="hidden lg:flex items-center gap-2.5 border border-border bg-card px-4 py-2 rounded-xl">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Connected
+          </span>
         </div>
       </div>
 
       {/* Status cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Progress Card */}
-        <div className="glass p-8 rounded-[2.5rem] border-white/5 shadow-xl hover:shadow-primary/5 transition-all group">
+        <div className="card-clean hover-lift animate-fade-up stagger-1 corner-accents">
           <div className="flex items-center justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
-              <HugeiconsIcon icon={ChartLineData01Icon} className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+              <HugeiconsIcon
+                icon={ChartLineData01Icon}
+                className="w-5 h-5 text-primary"
+              />
             </div>
-            <Badge className="bg-primary/20 text-primary border-none text-xs rounded-full px-3 py-1 font-bold">LIVE</Badge>
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold rounded-lg px-2.5 py-0.5"
+            >
+              Live
+            </Badge>
           </div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-1">Course Progress</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+            Course Progress
+          </p>
           <div className="flex items-baseline gap-2 mb-4">
-            <span className="text-4xl font-black">{data.progressPercent}%</span>
-            <span className="text-xs text-muted-foreground font-medium">completed</span>
+            <span className="text-3xl font-bold tracking-tight">
+              {data.progressPercent}%
+            </span>
+            <span className="text-sm text-muted-foreground">completed</span>
           </div>
-          <Progress value={data.progressPercent} className="h-2.5 rounded-full bg-white/5" />
+          <Progress
+            value={data.progressPercent}
+            className="h-2 rounded-full"
+          />
         </div>
 
         {/* Enrollment Card */}
-        <div className="glass p-8 rounded-[2.5rem] border-white/5 shadow-xl hover:shadow-purple-500/5 transition-all group">
+        <div className="card-clean hover-lift animate-fade-up stagger-2 corner-accents">
           <div className="flex items-center justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 transition-transform group-hover:scale-110">
-              <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+              <HugeiconsIcon
+                icon={CheckmarkCircle01Icon}
+                className="w-5 h-5 text-primary"
+              />
             </div>
           </div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-1">Status</p>
-          <div className="flex flex-col gap-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+            Enrollment Status
+          </p>
+          <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold capitalize">{data.enrollmentStatus}</span>
-              <div className="w-1 h-1 rounded-full bg-muted-foreground/30"></div>
-              <span className="text-sm text-muted-foreground uppercase tracking-widest">KYC: {data.kycStatus.replace("_", " ")}</span>
+              <span className="text-2xl font-bold capitalize">
+                {data.enrollmentStatus}
+              </span>
+              <span className="w-1 h-1 rounded-full bg-muted-foreground/30" />
+              <span className="text-sm text-muted-foreground">
+                KYC: {data.kycStatus.replace("_", " ")}
+              </span>
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed">Your identity has been verified and your enrollment is active for the current semester.</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your identity has been verified and your enrollment is active.
+            </p>
           </div>
         </div>
 
         {/* Next Lesson Card */}
-        <div className="glass p-8 rounded-[2.5rem] border-white/5 shadow-xl hover:shadow-blue-500/5 transition-all group">
+        <div className="card-clean hover-lift animate-fade-up stagger-3 corner-accents">
           <div className="flex items-center justify-between mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 transition-transform group-hover:scale-110">
-              <HugeiconsIcon icon={CourseIcon} className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
+              <HugeiconsIcon
+                icon={CourseIcon}
+                className="w-5 h-5 text-primary"
+              />
             </div>
           </div>
-          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-1">Up Next</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+            Up Next
+          </p>
           {data.nextLesson ? (
             <div className="space-y-4">
               <div>
-                <h3 className="text-xl font-bold line-clamp-1">{data.nextLesson.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">{data.nextLesson.moduleTitle}</p>
+                <h3 className="text-lg font-bold line-clamp-1">
+                  {data.nextLesson.title}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {data.nextLesson.moduleTitle}
+                </p>
               </div>
               <Link
                 href={`/student/lessons/${data.nextLesson.id}`}
-                className={cn(buttonVariants({ size: "sm" }), "w-full rounded-xl h-11 bg-white/5 hover:bg-white/10 border-white/5 text-primary-foreground")}
+                className={cn(
+                  buttonVariants({ size: "sm" }),
+                  "w-full rounded-xl"
+                )}
               >
-                Jump In <HugeiconsIcon icon={ArrowRight01Icon} className="ml-2 w-4 h-4" />
+                Jump In
+                <HugeiconsIcon
+                  icon={ArrowRight01Icon}
+                  className="ml-2 w-4 h-4"
+                />
               </Link>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-4 text-center">
-              <p className="text-sm font-bold text-primary">Mission Complete!</p>
-              <p className="text-xs text-muted-foreground">All lessons up to date.</p>
+              <p className="text-sm font-bold text-primary">
+                All caught up!
+              </p>
+              <p className="text-xs text-muted-foreground">
+                No pending lessons.
+              </p>
             </div>
           )}
         </div>
@@ -166,44 +227,66 @@ export default function StudentDashboard() {
 
       {/* Pending Assignments */}
       {data.pendingAssignments.length > 0 ? (
-        <div className="glass p-8 md:p-10 rounded-[2.5rem] border-white/5 shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl -z-10"></div>
-
+        <div className="border border-border bg-card rounded-2xl p-8 md:p-10 animate-fade-up stagger-4 relative overflow-hidden">
+          {/* Subtle decorative corner dot cluster */}
+          <div className="absolute -top-4 -right-4 w-32 h-32 dot-cluster opacity-15 pointer-events-none" />
           <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400">
-                <HugeiconsIcon icon={Task01Icon} className="w-5 h-5" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+                <HugeiconsIcon
+                  icon={Task01Icon}
+                  className="w-5 h-5 text-primary"
+                />
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">Pending Tasks</h2>
+              <h2 className="text-xl font-bold tracking-tight">
+                Pending Assignments
+              </h2>
             </div>
-            <Link href="/student/assignments" className="text-sm font-bold text-primary hover:underline">View All</Link>
+            <Link
+              href="/student/assignments"
+              className="text-sm font-semibold text-primary hover:underline underline-offset-4"
+            >
+              View all
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {data.pendingAssignments.map((assignment) => (
               <div
                 key={assignment.id}
-                className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/5 p-6 hover:bg-white/10 transition-colors group/task"
+                className="flex items-center justify-between rounded-xl border border-border bg-background p-5 hover:border-primary/30 transition-colors group/task"
               >
                 <div className="flex gap-4 items-center">
-                  <div className="w-12 h-12 rounded-full border border-white/10 flex flex-col items-center justify-center bg-background/50">
-                    <HugeiconsIcon icon={Calendar01Icon} className="w-4 h-4 text-muted-foreground mb-0.5" />
-                    <span className="text-[10px] font-bold uppercase text-muted-foreground">{new Date(assignment.dueDate).toLocaleString('en-US', { month: 'short' })}</span>
+                  <div className="w-11 h-11 rounded-lg border border-border flex flex-col items-center justify-center bg-secondary/50">
+                    <HugeiconsIcon
+                      icon={Calendar01Icon}
+                      className="w-4 h-4 text-muted-foreground mb-0.5"
+                    />
+                    <span className="text-[9px] font-bold uppercase text-muted-foreground">
+                      {new Date(assignment.dueDate).toLocaleString("en-US", {
+                        month: "short",
+                      })}
+                    </span>
                   </div>
                   <div>
-                    <p className="font-bold text-lg group-hover/task:text-primary transition-colors">{assignment.title}</p>
+                    <p className="font-semibold group-hover/task:text-primary transition-colors">
+                      {assignment.title}
+                    </p>
                     <p className="text-xs text-muted-foreground">
-                      Deadline:{" "}
-                      {new Date(assignment.dueDate).toLocaleDateString("en-US", {
-                        day: "numeric",
-                        year: "numeric",
-                      })}
+                      Due{" "}
+                      {new Date(assignment.dueDate).toLocaleDateString(
+                        "en-US",
+                        { day: "numeric", month: "short", year: "numeric" }
+                      )}
                     </p>
                   </div>
                 </div>
                 <Link
                   href="/student/assignments"
-                  className={cn(buttonVariants({ variant: "outline", size: "sm" }), "rounded-xl border-white/10 hover:bg-white/5")}
+                  className={cn(
+                    buttonVariants({ variant: "outline", size: "sm" }),
+                    "rounded-lg shrink-0"
+                  )}
                 >
                   Submit
                 </Link>
@@ -212,15 +295,19 @@ export default function StudentDashboard() {
           </div>
         </div>
       ) : (
-        <div className="glass p-12 rounded-[2.5rem] border-white/5 text-center">
-          <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
-            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="w-10 h-10" />
+        <div className="border border-border bg-card rounded-2xl p-12 text-center animate-fade-up stagger-4">
+          <div className="w-16 h-16 bg-secondary rounded-xl flex items-center justify-center mx-auto mb-5">
+            <HugeiconsIcon
+              icon={CheckmarkCircle01Icon}
+              className="w-8 h-8 text-primary"
+            />
           </div>
-          <h2 className="text-2xl font-bold mb-2">No pending assignments</h2>
-          <p className="text-muted-foreground">You&apos;re all caught up with your tasks. Take a moment to review your notes!</p>
+          <h2 className="text-xl font-bold mb-2">No pending assignments</h2>
+          <p className="text-muted-foreground text-sm">
+            You&apos;re all caught up. Take a moment to review your notes.
+          </p>
         </div>
       )}
     </div>
   );
 }
-
