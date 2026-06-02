@@ -16,11 +16,20 @@ describe('InstructorsService', () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    user: {
+      findMany: jest.fn(),
+    },
   };
 
   const uploadsService = {
     getStoredFileKey: jest.fn(),
     getSignedReadUrl: jest.fn(),
+  };
+
+  const cache = {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn(),
   };
 
   let service: InstructorsService;
@@ -30,6 +39,7 @@ describe('InstructorsService', () => {
     service = new InstructorsService(
       prisma as unknown as PrismaService,
       uploadsService as unknown as UploadsService,
+      cache as unknown as ReturnType<typeof jest.fn>,
     );
   });
 
@@ -55,6 +65,9 @@ describe('InstructorsService', () => {
       },
     ]);
     prisma.submission.count.mockResolvedValue(1);
+    prisma.user.findMany.mockResolvedValue([
+      { id: 'student-1', name: 'Test Student', email: 'student@test.com' },
+    ]);
     uploadsService.getStoredFileKey.mockReturnValue(
       'submissions/student-1.zip',
     );

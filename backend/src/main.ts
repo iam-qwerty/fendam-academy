@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module.js';
+import { CacheControlInterceptor } from './common/interceptors/cache-control.interceptor.js';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -29,6 +30,9 @@ async function bootstrap() {
       },
     }),
   );
+
+  // Global cache-control headers
+  app.useGlobalInterceptors(new CacheControlInterceptor());
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

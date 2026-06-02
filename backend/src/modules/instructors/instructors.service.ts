@@ -3,7 +3,10 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 
@@ -12,10 +15,20 @@ export class InstructorsService {
   constructor(
     private prisma: PrismaService,
     private uploadsService: UploadsService,
+    @Inject(CACHE_MANAGER) private cache: Cache,
   ) {}
 
   /** Get modules assigned to this instructor via InstructorModule join */
   async getAssignedModules(instructorId: string) {
+    const cacheKey = `instructor-modules:${instructorId}`;
+
+    try {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to database
+    }
+
     const assignments = await this.prisma.instructorModule.findMany({
       where: { instructorId },
       include: {
@@ -29,7 +42,7 @@ export class InstructorsService {
       },
     });
 
-    return assignments.map((a) => ({
+    const result = assignments.map((a) => ({
       id: a.module.id,
       title: a.module.title,
       orderIndex: a.module.orderIndex,
@@ -38,10 +51,27 @@ export class InstructorsService {
       assignmentCount: a.module.assignments.length,
       assignedAt: a.assignedAt,
     }));
+
+    try {
+      await this.cache.set(cacheKey, result, 10 * 60 * 1000);
+    } catch {
+      // Cache failure — result is still returned
+    }
+
+    return result;
   }
 
   /** Get single module detail — verify instructor is assigned */
   async getModuleDetail(moduleId: string, instructorId: string) {
+    const cacheKey = `module-detail:${moduleId}:${instructorId}`;
+
+    try {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to database
+    }
+
     const assignment = await this.prisma.instructorModule.findUnique({
       where: {
         instructorId_moduleId: { instructorId, moduleId },
@@ -61,7 +91,7 @@ export class InstructorsService {
     if (!assignment)
       throw new ForbiddenException('Not assigned to this module');
 
-    return {
+    const result = {
       id: assignment.module.id,
       title: assignment.module.title,
       orderIndex: assignment.module.orderIndex,
@@ -70,6 +100,14 @@ export class InstructorsService {
       assignmentCount: assignment.module._count.assignments,
       assignedAt: assignment.assignedAt,
     };
+
+    try {
+      await this.cache.set(cacheKey, result, 10 * 60 * 1000);
+    } catch {
+      // Cache failure — result is still returned
+    }
+
+    return result;
   }
 
   /** Get assignments scoped to instructor's assigned modules */
@@ -175,35 +213,38 @@ export class InstructorsService {
     ]);
 
     const data = await Promise.all(
-      submissions.map(async (submission) => {
-        const student = await this.prisma.user.findUnique({
-          where: { id: submission.studentId },
-          select: { id: true, name: true, email: true },
-        });
-
-        return {
-          id: submission.id,
-          studentId: submission.studentId,
-          student: student
-            ? { id: student.id, name: student.name, email: student.email }
-            : null,
-          score: submission.score,
-          feedback: submission.feedback,
-          status: submission.status,
-          createdAt: submission.createdAt,
-          assignment: submission.assignment,
-          fileReadUrl: await this.uploadsService.getSignedReadUrl(
-            this.uploadsService.getStoredFileKey(
-              submission.fileKey,
-              submission.fileUrl,
-            ),
+      submissions.map(async (submission) => ({
+        id: submission.id,
+        studentId: submission.studentId,
+        score: submission.score,
+        feedback: submission.feedback,
+        status: submission.status,
+        createdAt: submission.createdAt,
+        assignment: submission.assignment,
+        fileReadUrl: await this.uploadsService.getSignedReadUrl(
+          this.uploadsService.getStoredFileKey(
+            submission.fileKey,
+            submission.fileUrl,
           ),
-        };
-      }),
+        ),
+      })),
     );
 
+    // Batch-fetch student info to avoid N+1
+    const studentIds = [...new Set(submissions.map((s) => s.studentId))];
+    const students = await this.prisma.user.findMany({
+      where: { id: { in: studentIds } },
+      select: { id: true, name: true, email: true },
+    });
+    const studentMap = new Map(students.map((s) => [s.id, s]));
+
+    const enriched = data.map((item) => ({
+      ...item,
+      student: studentMap.get(item.studentId) || null,
+    }));
+
     return {
-      data,
+      data: enriched,
       total,
       page,
       totalPages: Math.ceil(total / limit),

@@ -116,7 +116,7 @@ export default function StudentDashboard() {
       {/* Status cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Progress Card */}
-        <div className="card-clean hover-lift animate-fade-up stagger-1 corner-accents">
+        <div className="card-clean hover-lift animate-fade-up stagger-1">
           <div className="flex items-center justify-between mb-6">
             <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <HugeiconsIcon
@@ -147,7 +147,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Enrollment Card */}
-        <div className="card-clean hover-lift animate-fade-up stagger-2 corner-accents">
+        <div className="card-clean hover-lift animate-fade-up stagger-2">
           <div className="flex items-center justify-between mb-6">
             <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <HugeiconsIcon
@@ -176,7 +176,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Next Lesson Card */}
-        <div className="card-clean hover-lift animate-fade-up stagger-3 corner-accents">
+        <div className="card-clean hover-lift animate-fade-up stagger-3">
           <div className="flex items-center justify-between mb-6">
             <div className="w-11 h-11 rounded-xl bg-secondary flex items-center justify-center">
               <HugeiconsIcon

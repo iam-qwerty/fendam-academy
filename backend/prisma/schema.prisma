@@ -123,6 +123,8 @@ model InstructorModule {
   module       Module   @relation(fields: [moduleId], references: [id])
 
   @@unique([instructorId, moduleId])
+  @@index([instructorId])
+  @@index([moduleId])
 }
 
 model Lesson {
@@ -145,6 +147,8 @@ model LessonCompletion {
   lesson      Lesson   @relation(fields: [lessonId], references: [id])
 
   @@unique([lessonId, studentId])
+  @@index([studentId])
+  @@index([lessonId])
 }
 
 model Assignment {
@@ -171,6 +175,9 @@ model Submission {
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
 
   @@unique([assignmentId, studentId])
+  @@index([studentId])
+  @@index([assignmentId])
+  @@index([status])
 }
 
 model KYCRecord {
@@ -183,4 +190,7 @@ model KYCRecord {
   status             String   @default("submitted") // submitted | under_review | approved | rejected
   reviewComment      String?
   createdAt          DateTime @default(now())
+
+  @@index([studentId])
+  @@index([status])
 }

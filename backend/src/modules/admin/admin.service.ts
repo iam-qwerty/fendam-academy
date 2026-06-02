@@ -2,7 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 
@@ -11,6 +14,7 @@ export class AdminService {
   constructor(
     private prisma: PrismaService,
     private uploadsService: UploadsService,
+    @Inject(CACHE_MANAGER) private cache: Cache,
   ) {}
 
   /** Paginated user list */
@@ -142,6 +146,15 @@ export class AdminService {
 
   /** List all instructor→module assignments */
   async getInstructorModules(page = 1, limit = 20) {
+    const cacheKey = `admin:instructor-modules:${page}:${limit}`;
+
+    try {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to database
+    }
+
     const [assignments, total] = await Promise.all([
       this.prisma.instructorModule.findMany({
         include: {
@@ -167,7 +180,7 @@ export class AdminService {
     });
     const instructorMap = new Map(instructors.map((i) => [i.id, i]));
 
-    return {
+    const result = {
       data: assignments.map((a) => ({
         id: a.id,
         instructor: instructorMap.get(a.instructorId) || {
@@ -180,6 +193,14 @@ export class AdminService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+
+    try {
+      await this.cache.set(cacheKey, result, 5 * 60 * 1000);
+    } catch {
+      // Cache failure — result is still returned
+    }
+
+    return result;
   }
 
   /** Get KYC queue */

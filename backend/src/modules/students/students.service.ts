@@ -4,7 +4,10 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
+  Inject,
 } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { UploadsService } from '../uploads/uploads.service.js';
 
@@ -15,6 +18,7 @@ export class StudentsService {
   constructor(
     private prisma: PrismaService,
     private uploadsService: UploadsService,
+    @Inject(CACHE_MANAGER) private cache: Cache,
   ) {}
 
   async getDashboard(userId: string) {
@@ -112,7 +116,16 @@ export class StudentsService {
     });
     if (!profile) throw new NotFoundException('Student profile not found');
 
-    return this.prisma.module.findMany({
+    const cacheKey = `modules:track:${profile.trackId}`;
+
+    try {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to database
+    }
+
+    const result = await this.prisma.module.findMany({
       where: { trackId: profile.trackId },
       orderBy: { orderIndex: 'asc' },
       include: {
@@ -125,6 +138,14 @@ export class StudentsService {
         },
       },
     });
+
+    try {
+      await this.cache.set(cacheKey, result, 30 * 60 * 1000);
+    } catch {
+      // Cache failure — result is still returned
+    }
+
+    return result;
   }
 
   async getLesson(lessonId: string, userId: string) {
@@ -133,6 +154,15 @@ export class StudentsService {
       where: { userId },
     });
     if (!profile) throw new NotFoundException('Student profile not found');
+
+    const cacheKey = `lesson:${lessonId}:${userId}`;
+
+    try {
+      const cached = await this.cache.get(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to database
+    }
 
     const lesson = await this.prisma.lesson.findFirst({
       where: {
@@ -150,7 +180,7 @@ export class StudentsService {
 
     if (!lesson) throw new NotFoundException('Lesson not found');
 
-    return {
+    const result = {
       id: lesson.id,
       title: lesson.title,
       vimeoId: lesson.vimeoId,
@@ -158,6 +188,14 @@ export class StudentsService {
       moduleTitle: lesson.module.title,
       isCompleted: lesson.completions.length > 0,
     };
+
+    try {
+      await this.cache.set(cacheKey, result, 30 * 60 * 1000);
+    } catch {
+      // Cache failure — result is still returned
+    }
+
+    return result;
   }
 
   async completeLesson(lessonId: string, userId: string) {

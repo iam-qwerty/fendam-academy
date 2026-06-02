@@ -1,4 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Inject } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import {
   S3Client,
   PutObjectCommand,
@@ -6,6 +8,8 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
+
+const SIGNED_URL_CACHE_TTL = 3500 * 1000;
 
 @Injectable()
 export class UploadsService {
@@ -22,7 +26,7 @@ export class UploadsService {
 
   private readonly maxSizeBytes = 10 * 1024 * 1024; // 10 MB
 
-  constructor() {
+  constructor(@Inject(CACHE_MANAGER) private cache: Cache) {
     this.bucketName = process.env.R2_BUCKET_NAME || 'fendam-uploads';
 
     this.s3 = new S3Client({
@@ -35,10 +39,6 @@ export class UploadsService {
     });
   }
 
-  /**
-   * Generate a presigned PUT URL for direct upload to R2.
-   * Returns the signed URL and a fileKey for the client to submit back.
-   */
   async generatePresignedUrl(filename: string, contentType: string) {
     if (!this.allowedTypes.includes(contentType)) {
       throw new BadRequestException(
@@ -46,7 +46,6 @@ export class UploadsService {
       );
     }
 
-    // Sanitize filename
     const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
     const fileKey = `uploads/${randomUUID()}-${safeName}`;
 
@@ -57,7 +56,7 @@ export class UploadsService {
     });
 
     const signedUrl = await getSignedUrl(this.s3, command, {
-      expiresIn: 300, // 5 minutes
+      expiresIn: 300,
     });
 
     return { signedUrl, fileKey };
@@ -94,13 +93,31 @@ export class UploadsService {
   }
 
   async getSignedReadUrl(fileKey: string): Promise<string> {
+    const validatedKey = this.validateFileKey(fileKey);
+    const cacheKey = `signed-url:${validatedKey}`;
+
+    try {
+      const cached = await this.cache.get<string>(cacheKey);
+      if (cached) return cached;
+    } catch {
+      // Cache failure — fall through to generate URL
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: this.validateFileKey(fileKey),
+      Key: validatedKey,
     });
 
-    return getSignedUrl(this.s3, command, {
-      expiresIn: 300,
+    const url = await getSignedUrl(this.s3, command, {
+      expiresIn: 3600,
     });
+
+    try {
+      await this.cache.set(cacheKey, url, SIGNED_URL_CACHE_TTL);
+    } catch {
+      // Cache failure — URL is still valid, just not cached
+    }
+
+    return url;
   }
 }
