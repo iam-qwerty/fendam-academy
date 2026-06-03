@@ -134,7 +134,7 @@ export default function StudentAssignmentsPage() {
             const isSubmitting = submitting === assignment.id;
             return (
               <Card key={assignment.id}>
-                <CardContent className="flex items-center justify-between p-6">
+                <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-6">
                   <div>
                     <p className="font-medium">{assignment.title}</p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -153,6 +153,7 @@ export default function StudentAssignmentsPage() {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="min-h-[44px] sm:shrink-0"
                     disabled={isSubmitting || isPastDue}
                     onClick={() => openFilePicker(assignment.id)}
                   >

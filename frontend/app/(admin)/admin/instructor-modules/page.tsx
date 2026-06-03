@@ -103,7 +103,7 @@ export default function AdminInstructorModulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             Instructor Assignments
@@ -114,6 +114,7 @@ export default function AdminInstructorModulesPage() {
         </div>
         <Button
           size="sm"
+          className="min-h-[44px] sm:self-center"
           onClick={() => setShowForm(!showForm)}
         >
           {showForm ? "Cancel" : "+ Assign"}
@@ -163,7 +164,8 @@ export default function AdminInstructorModulesPage() {
         </div>
       ) : (
         <div className="rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
             <thead>
               <tr className="bg-muted/50 border-b border-border">
                 <th className="text-left px-4 py-3 font-medium">Instructor</th>
@@ -212,6 +214,7 @@ export default function AdminInstructorModulesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">User Management</h1>
           <p className="text-muted-foreground mt-1">
@@ -112,12 +112,13 @@ export default function AdminUsersPage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {["", "student", "instructor", "admin"].map((role) => (
             <Button
               key={role}
               variant={roleFilter === role ? "default" : "outline"}
               size="sm"
+              className="min-h-[44px]"
               onClick={() => {
                 setRoleFilter(role);
                 setPage(1);
@@ -130,7 +131,8 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="rounded-lg border border-border overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-muted/50 border-b border-border">
               <th className="text-left px-4 py-3 font-medium">User</th>
@@ -201,6 +203,7 @@ export default function AdminUsersPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {totalPages > 1 && (

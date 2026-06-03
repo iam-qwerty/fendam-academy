@@ -46,14 +46,14 @@ export default function StudentModulesPage() {
         {modules.map((mod) => (
           <Card key={mod.id} className="overflow-hidden">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-lg">
                   <span className="text-muted-foreground font-normal mr-2">
                     Module {mod.orderIndex}
                   </span>
                   {mod.title}
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0">
                   <Badge variant="secondary">
                     {mod.lessons.length} lessons
                   </Badge>

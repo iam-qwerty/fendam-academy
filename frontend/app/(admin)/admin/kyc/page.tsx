@@ -82,7 +82,7 @@ export default function AdminKycPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">KYC Queue</h1>
           <p className="text-muted-foreground mt-1">
@@ -90,13 +90,14 @@ export default function AdminKycPage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {["", "submitted", "under_review", "approved", "rejected"].map(
             (status) => (
               <Button
                 key={status}
                 variant={filter === status ? "default" : "outline"}
                 size="sm"
+                className="min-h-[44px]"
                 onClick={() => {
                   setFilter(status);
                   setPage(1);
@@ -118,7 +119,7 @@ export default function AdminKycPage() {
           {records.map((record) => (
             <Card key={record.id}>
               <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">
                       {record.student?.name || record.student?.email || record.studentId.slice(0, 8) + "..."}
@@ -141,14 +142,14 @@ export default function AdminKycPage() {
                     </Badge>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
                     <SecureFileLink href={record.idCardReadUrl} label="ID Card" />
                     <SecureFileLink
                       href={record.paymentProofReadUrl}
                       label="Payment"
                     />
                     {record.status === "submitted" && (
-                      <Button size="sm" onClick={() => setReviewing(record.id)}>
+                      <Button size="sm" className="min-h-[44px]" onClick={() => setReviewing(record.id)}>
                         Review
                       </Button>
                     )}
@@ -166,9 +167,10 @@ export default function AdminKycPage() {
                         placeholder="Optional comment for the student"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
+                        className="min-h-[44px]"
                         onClick={() => handleAction(record.id, "approved")}
                         disabled={reviewMutation.isPending}
                       >
@@ -177,6 +179,7 @@ export default function AdminKycPage() {
                       <Button
                         size="sm"
                         variant="destructive"
+                        className="min-h-[44px]"
                         onClick={() => handleAction(record.id, "rejected")}
                         disabled={reviewMutation.isPending}
                       >
@@ -185,6 +188,7 @@ export default function AdminKycPage() {
                       <Button
                         size="sm"
                         variant="ghost"
+                        className="min-h-[44px]"
                         onClick={() => setReviewing(null)}
                       >
                         Cancel

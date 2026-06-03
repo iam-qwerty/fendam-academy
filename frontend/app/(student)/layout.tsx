@@ -192,7 +192,7 @@ export default function StudentLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="rounded-lg"
+            className="rounded-lg h-11 w-11"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open menu"
           >

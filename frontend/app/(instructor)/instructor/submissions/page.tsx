@@ -89,7 +89,7 @@ export default function InstructorSubmissionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Submissions</h1>
           <p className="text-muted-foreground mt-1">
@@ -97,12 +97,13 @@ export default function InstructorSubmissionsPage() {
           </p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {["", "submitted", "graded", "returned"].map((status) => (
             <Button
               key={status}
               variant={filter === status ? "default" : "outline"}
               size="sm"
+              className="min-h-[44px]"
               onClick={() => {
                 setFilter(status);
                 setPage(1);
@@ -123,7 +124,7 @@ export default function InstructorSubmissionsPage() {
           {submissions.map((sub) => (
             <Card key={sub.id}>
               <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
                     <p className="font-medium">{sub.assignment.title}</p>
                     <p className="text-sm text-muted-foreground">
@@ -151,11 +152,12 @@ export default function InstructorSubmissionsPage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
                     <SecureFileLink href={sub.fileReadUrl} label="View File" />
                     {sub.status === "submitted" && (
                       <Button
                         size="sm"
+                        className="min-h-[44px]"
                         onClick={() => setGrading(sub.id)}
                       >
                         Grade
@@ -166,7 +168,7 @@ export default function InstructorSubmissionsPage() {
 
                 {grading === sub.id && (
                   <div className="mt-4 rounded-lg border border-border p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1.5">
                         <Label htmlFor="score">Score (max {sub.assignment.maxScore})</Label>
                         <Input
