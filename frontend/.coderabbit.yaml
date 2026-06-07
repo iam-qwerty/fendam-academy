@@ -1,0 +1,28 @@
+# CodeRabbit Configuration
+# https://docs.coderabbit.ai/guides/review-configuration
+
+reviews:
+  profile: assertive
+  path_filters:
+    # Exclude legacy reference code from reviews
+    - "!legacy-source/**"
+    - "!node_modules/**"
+    - "!dist/**"
+    - "!*.gen.ts"
+    - "!bun.lock"
+  auto_review:
+    enabled: true
+    drafts: false
+  review_status: true
+
+chat:
+  auto_reply: true
+
+# Custom review instructions
+instructions: |
+  - Assert that no `next/*` imports exist in `src/`
+  - Assert that no `prisma` or `pg` imports exist outside `legacy-source/`
+  - Verify role-based auth guards in route `beforeLoad` for protected pages
+  - Check that server-side DB access uses `createServerFn` or route `loader`
+  - Ensure client env vars use `VITE_` prefix
+  - Flag any `'use client'` directives as unnecessary
