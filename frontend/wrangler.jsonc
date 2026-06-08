@@ -3,14 +3,12 @@
   "name": "fendam-academy",
   "compatibility_date": "2025-09-02",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
-
-  // Build output directory (matches Vite build output)
-  "pages_build_output_dir": "dist/client",
 
   // Environment variables (non-secret defaults; secrets set via `wrangler secret put`)
   "vars": {
-    "APP_URL": "https://academy.fendamtech.com"
+    "APP_URL": "https://academy.fendamtech.com",
+    "VITE_APP_URL": "https://academy.fendamtech.com",
+    "VITE_API_URL": "https://academy-api.fendamtech.com"
   },
 
   // Secrets (set via `wrangler secret put <NAME>`):
@@ -26,6 +24,10 @@
   //   SENTRY_AUTH_TOKEN  — Sentry auth token for source maps (build-time only)
 
   "observability": {
+    "logs": {},
+    "traces": {
+      "enabled": true
+    },
     "enabled": true,
     "head_sampling_rate": 1
   }
