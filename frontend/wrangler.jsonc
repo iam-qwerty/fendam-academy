@@ -10,7 +10,7 @@
 
   // Environment variables (non-secret defaults; secrets set via `wrangler secret put`)
   "vars": {
-    "APP_URL": "https://fendam-academy.pages.dev"
+    "APP_URL": "https://academy.fendamtech.com"
   },
 
   // Secrets (set via `wrangler secret put <NAME>`):
