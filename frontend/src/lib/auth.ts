@@ -82,7 +82,6 @@ export const auth = betterAuth({
     process.env.VITE_APP_URL || 'http://localhost:3000',
   ],
   plugins: [
-    tanstackStartCookies(),
     jwt({
       jwt: {
         definePayload: ({ user }) => ({
@@ -95,6 +94,7 @@ export const auth = betterAuth({
         expirationTime: '15m',
       },
     }),
+    tanstackStartCookies(),
   ],
 })
 
